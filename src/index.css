@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globais para tema dark */
+@layer base {
+  body {
+    @apply bg-background-primary text-gray-100;
+  }
+  
+  /* Scrollbar customizada dark */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-background-secondary;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-medium rounded-lg;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-light;
+  }
+}
+
+/* Classes utilitárias personalizadas */
+@layer components {
+  /* Card dark padrão */
+  .card-dark {
+    @apply bg-background-tertiary border border-surface-dark rounded-lg shadow-xl;
+  }
+  
+  /* Input dark padrão */
+  .input-dark {
+    @apply bg-surface-dark border border-surface-medium text-gray-100 
+           placeholder-gray-500 rounded-lg px-4 py-2
+           focus:ring-2 focus:ring-dark-500 focus:border-transparent
+           transition-all;
+  }
+  
+  /* Button primário dark */
+  .btn-primary-dark {
+    @apply bg-gradient-to-r from-dark-600 to-dark-500 
+           text-white px-6 py-2 rounded-lg font-medium
+           hover:from-dark-500 hover:to-dark-400
+           shadow-lg shadow-dark-500/20
+           transition-all duration-200;
+  }
+  
+  /* Button secundário dark */
+  .btn-secondary-dark {
+    @apply bg-surface-dark border border-surface-medium text-gray-300
+           px-6 py-2 rounded-lg font-medium
+           hover:bg-surface-medium hover:border-surface-light
+           transition-all;
+  }
+  
+  /* Badge/Tag dark */
+  .badge-dark {
+    @apply bg-surface-dark text-gray-300 px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  /* Tabela dark */
+  .table-dark {
+    @apply w-full;
+  }
+  
+  .table-dark thead {
+    @apply bg-surface-dark;
+  }
+  
+  .table-dark th {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider;
+  }
+  
+  .table-dark tbody {
+    @apply divide-y divide-surface-dark;
+  }
+  
+  .table-dark tr {
+    @apply hover:bg-surface-dark/50 transition-colors;
+  }
+  
+  .table-dark td {
+    @apply px-6 py-4 text-sm text-gray-300;
+  }
+}
+
+/* Animações customizadas */
+@layer utilities {
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  
+  .glow-purple-strong {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
+  }
+  
+  .gradient-dark {
+    background: linear-gradient(135deg, #1a1a24 0%, #0a0a0f 100%);
+  }
+  
+  .gradient-purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  }
+}
