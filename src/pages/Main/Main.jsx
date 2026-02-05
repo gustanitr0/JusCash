@@ -28,11 +28,11 @@ const MainApp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface-dark">
+    <div className="min-h-screen bg-background-primary">
       <Navbar />
       <div className="flex">
         <Sidebar currentView={currentView} setCurrentView={setCurrentView} />
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-h-screen">
           {renderView()}
         </main>
       </div>
