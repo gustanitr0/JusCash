@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Bell, Settings, LogOut, Menu } from 'lucide-react';
-import { useAuth } from '../../contexts/auth';
+import React, { useState } from 'react'
+import { Bell, Settings, LogOut, Menu } from 'lucide-react'
+import { useAuth } from '../../contexts/auth'
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { user, logout } = useAuth()
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleLogout = async () => {
     if (window.confirm('Deseja realmente sair?')) {
-      await logout();
+      await logout()
     }
-  };
+  }
 
   return (
     <nav className="bg-background-secondary border-b border-surface-dark px-4 lg:px-6 py-4 shadow-lg sticky top-0 z-30">
@@ -25,13 +25,13 @@ const Navbar = () => {
             <p className="text-xs text-gray-500">Gestão de Emprestimos Inteligente</p>
           </div>
         </div>
-        
+
         {/* Logo Mobile (centralizado) */}
-        <div className='flex lg:hidden items-center gap-3 ml-14'>
-          <div className='bg-gradient-purple w-8 h-8 rounded-lg flex items-center justify-center font-bold text-lg shadow-lg'>
+        <div className="flex lg:hidden items-center gap-3 ml-14">
+          <div className="bg-gradient-purple w-8 h-8 rounded-lg flex items-center justify-center font-bold text-lg shadow-lg">
             J
           </div>
-          <h1 className='text-lg font-bold text-white'>JusCash</h1>
+          <h1 className="text-lg font-bold text-white">JusCash</h1>
         </div>
 
         {/* Actions do usuario */}
@@ -40,7 +40,7 @@ const Navbar = () => {
             <Bell className="w-6 h-6" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-dark-500 rounded-full glow-purple-strong"></span>
           </button>
-          
+
           <button className="hidden sm:block p-2 text-gray-400 hover:text-white hover:bg-surface-dark rounded-lg transition">
             <Settings className="w-6 h-6" />
           </button>
@@ -56,7 +56,7 @@ const Navbar = () => {
                 <p className="text-sm font-medium text-white">{user?.name}</p>
                 <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
               </div>
-              
+
               {/* Avatar */}
               <div className="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-purple rounded-full flex items-center justify-center text-white font-semibold glow-purple text-sm lg:text-base">
                 {user?.name?.charAt(0).toUpperCase()}
@@ -73,13 +73,15 @@ const Navbar = () => {
                 </div>
 
                 <button
-                  onClick={() => {/* Perfil */}}
+                  onClick={() => {
+                    /* Perfil */
+                  }}
                   className="w-full px-4 py-3 text-left text-sm text-gray-300 hover:bg-surface-dark transition flex items-center gap-3"
                 >
                   <Settings className="w-4 h-4" />
                   Configurações
                 </button>
-                
+
                 <button
                   onClick={handleLogout}
                   className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 transition flex items-center gap-3 border-t border-surface-dark"
@@ -93,7 +95,7 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
-  );
-};
+  )
+}
 
-export default Navbar;
+export default Navbar

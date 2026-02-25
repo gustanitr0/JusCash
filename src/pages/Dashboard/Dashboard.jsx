@@ -1,58 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, FileText, AlertCircle, TrendingUp, TrendingDown, CheckCircle, Clock } from 'lucide-react';
-import { useAuth } from '../../contexts/auth';
-import { contractsService, installmentsService, transactionsService } from '../../firebase/services/firebaseServices/FirebaseServices';
+import React, { useState, useEffect } from 'react'
+import {
+  DollarSign,
+  CreditCard,
+  FileText,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  CheckCircle,
+  Clock,
+} from 'lucide-react'
+import { useAuth } from '../../contexts/auth'
+import {
+  contractsService,
+  installmentsService,
+  transactionsService,
+} from '../../services/FirebaseServices'
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const [contracts, setContracts] = useState([]);
-  const [installments, setInstallments] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth()
+  const [contracts, setContracts] = useState([])
+  const [installments, setInstallments] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    // Carrega quando user estiver disponivel
+    if (user?.uid) {
+      loadDashboardData()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const loadDashboardData = async () => {
     try {
-      const [contractsData, installmentsData, transactionsData] = await Promise.all([
-        contractsService.getAll(),
-        installmentsService.getAll(),
-        transactionsService.getAll()
-      ]);
+      setLoading(true)
 
-      setContracts(contractsData);
-      setInstallments(installmentsData);
-      setTransactions(transactionsData);
+      if (!user?.uid) {
+        console.error('user.uid não disponivel')
+        return
+      }
+
+      console.log('Carregando dados para user:', user.uid)
+
+      const [contractsData, installmentsData, transactionsData] = await Promise.all([
+        contractsService.getAll(user.uid),
+        installmentsService.getAll(user.uid),
+        transactionsService.getAll(user.uid),
+      ])
+
+      setContracts(contractsData)
+      setInstallments(installmentsData)
+      setTransactions(transactionsData)
     } catch (error) {
-      console.error('Erro ao carregar dashboard:', error);
+      console.error('Erro ao carregar dashboard:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
+    return new Date(date).toLocaleDateString('pt-BR')
+  }
 
   // Cálculos
   const stats = {
     totalReceived: contracts.reduce((sum, c) => sum + (c.paid || 0), 0),
     totalReceivable: contracts.reduce((sum, c) => sum + (c.pending || 0), 0),
-    activeContracts: contracts.filter(c => c.status === 'ativo').length,
-    overdueInstallments: installments.filter(i => {
-      const dueDate = new Date(i.dueDate);
-      return i.status === 'pendente' && dueDate < new Date();
+    activeContracts: contracts.filter((c) => c.status === 'ativo').length,
+    overdueInstallments: installments.filter((i) => {
+      const dueDate = new Date(i.dueDate)
+      return i.status === 'pendente' && dueDate < new Date()
     }).length,
     balance: transactions.reduce((sum, t) => {
-      return t.type === 'entrada' ? sum + t.value : sum - t.value;
-    }, 0)
-  };
+      return t.type === 'entrada' ? sum + t.value : sum - t.value
+    }, 0),
+  }
 
   if (loading) {
     return (
@@ -62,7 +89,7 @@ const Dashboard = () => {
           <p className="text-gray-300">Carregando dashboard...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -71,7 +98,12 @@ const Dashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-white">Bem-vindo, {user?.name}!</h1>
           <p className="text-gray-300 mt-1">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {new Date().toLocaleDateString('pt-BR', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
           </p>
         </div>
       </div>
@@ -128,23 +160,33 @@ const Dashboard = () => {
             <h2 className="text-lg font-semibold text-white">Próximos Vencimentos</h2>
           </div>
           <div className="p-6">
-            {installments.filter(i => i.status === 'pendente').slice(0, 5).length > 0 ? (
+            {installments.filter((i) => i.status === 'pendente').slice(0, 5).length > 0 ? (
               <div className="space-y-4">
-                {installments.filter(i => i.status === 'pendente').slice(0, 5).map(inst => {
-                  const contract = contracts.find(c => c.id === inst.contractId);
-                  return (
-                    <div key={inst.id} className="flex items-center justify-between p-4 bg-surface-dark rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-white">{contract?.clientName || 'Cliente'}</p>
-                        <p className="text-sm text-gray-300">{contract?.description || 'Contrato'}</p>
+                {installments
+                  .filter((i) => i.status === 'pendente')
+                  .slice(0, 5)
+                  .map((inst) => {
+                    const contract = contracts.find((c) => c.id === inst.contractId)
+                    return (
+                      <div
+                        key={inst.id}
+                        className="flex items-center justify-between p-4 bg-surface-dark rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-white">
+                            {contract?.clientName || 'Cliente'}
+                          </p>
+                          <p className="text-sm text-gray-300">
+                            {contract?.description || 'Contrato'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-white">{formatCurrency(inst.value)}</p>
+                          <p className="text-sm text-gray-300">{formatDate(inst.dueDate)}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-white">{formatCurrency(inst.value)}</p>
-                        <p className="text-sm text-gray-300">{formatDate(inst.dueDate)}</p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    )
+                  })}
               </div>
             ) : (
               <p className="text-center text-gray-500 py-8">Nenhum vencimento próximo</p>
@@ -160,29 +202,40 @@ const Dashboard = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-300">Saldo Atual</span>
-                <span className={`text-2xl font-bold ${stats.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <span
+                  className={`text-2xl font-bold ${stats.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                >
                   {formatCurrency(stats.balance)}
                 </span>
               </div>
             </div>
             {transactions.length > 0 ? (
               <div className="space-y-3">
-                {transactions.slice(0, 5).map(trans => (
-                  <div key={trans.id} className="flex items-center justify-between p-3 bg-surface-dark rounded">
+                {transactions.slice(0, 5).map((trans) => (
+                  <div
+                    key={trans.id}
+                    className="flex items-center justify-between p-3 bg-surface-dark rounded"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded ${trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'}`}>
-                        {trans.type === 'entrada' ? 
-                          <TrendingUp className="w-4 h-4 text-green-400" /> : 
+                      <div
+                        className={`p-2 rounded ${trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'}`}
+                      >
+                        {trans.type === 'entrada' ? (
+                          <TrendingUp className="w-4 h-4 text-green-400" />
+                        ) : (
                           <TrendingDown className="w-4 h-4 text-red-400" />
-                        }
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-medium text-white">{trans.description}</p>
                         <p className="text-xs text-gray-500">{formatDate(trans.date)}</p>
                       </div>
                     </div>
-                    <span className={`font-semibold ${trans.type === 'entrada' ? 'text-green-400' : 'text-red-400'}`}>
-                      {trans.type === 'entrada' ? '+' : '-'}{formatCurrency(trans.value)}
+                    <span
+                      className={`font-semibold ${trans.type === 'entrada' ? 'text-green-400' : 'text-red-400'}`}
+                    >
+                      {trans.type === 'entrada' ? '+' : '-'}
+                      {formatCurrency(trans.value)}
                     </span>
                   </div>
                 ))}
@@ -194,7 +247,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard

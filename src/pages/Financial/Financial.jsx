@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/auth";
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../../contexts/auth'
 import {
   Plus,
   TrendingUp,
@@ -11,109 +11,122 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-} from "lucide-react";
-import { contractsService, installmentsService, transactionsService } from "../../firebase/services/firebaseServices/FirebaseServices";
-import Modal from "../../components/Modal/Modal";
+} from 'lucide-react'
+import {
+  contractsService,
+  installmentsService,
+  transactionsService,
+} from '../../services/FirebaseServices'
+import Modal from '../../components/Modal/Modal'
 
 const Financial = () => {
-  const { user } = useAuth();
-  const [transactions, setTransactions] = useState([]);
-  const [installments, setInstallments] = useState([]);
-  const [contracts, setContracts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("transaction"); // 'transaction' ou 'payment'
-  const [selectedInstallment, setSelectedInstallment] = useState(null);
-  const [filterType, setFilterType] = useState("all");
-  const [filterPeriod, setFilterPeriod] = useState("month");
+  const { user } = useAuth()
+  const [transactions, setTransactions] = useState([])
+  const [installments, setInstallments] = useState([])
+  const [contracts, setContracts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [modalType, setModalType] = useState('transaction') // 'transaction' ou 'payment'
+  const [selectedInstallment, setSelectedInstallment] = useState(null)
+  const [filterType, setFilterType] = useState('all')
+  const [filterPeriod, setFilterPeriod] = useState('month')
   const [formData, setFormData] = useState({
-    type: "entrada",
-    description: "",
-    value: "",
-    date: new Date().toISOString().split("T")[0],
-    category: "honorario",
-    paymentMethod: "pix",
-  });
+    type: 'entrada',
+    description: '',
+    value: '',
+    date: new Date().toISOString().split('T')[0],
+    category: 'honorario',
+    paymentMethod: 'pix',
+  })
   const [paymentData, setPaymentData] = useState({
-    paidValue: "",
-    paidDate: new Date().toISOString().split("T")[0],
-    paymentMethod: "pix",
-    notes: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
+    paidValue: '',
+    paidDate: new Date().toISOString().split('T')[0],
+    paymentMethod: 'pix',
+    notes: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.uid) {
+      loadData()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const loadData = async () => {
     try {
-      setLoading(true);
-      const [transactionsData, installmentsData, contractsData] =
-        await Promise.all([
-          transactionsService.getAll(),
-          installmentsService.getAll(),
-          contractsService.getAll(),
-        ]);
-      setTransactions(transactionsData);
-      setInstallments(installmentsData);
-      setContracts(contractsData);
+      setLoading(true)
+
+      if (!user?.uid) {
+        console.error('user.uid não disponivel')
+        return
+      }
+
+      const [transactionsData, installmentsData, contractsData] = await Promise.all([
+        transactionsService.getAll(user.uid),
+        installmentsService.getAll(user.uid),
+        contractsService.getAll(user.uid),
+      ])
+      setTransactions(transactionsData)
+      setInstallments(installmentsData)
+      setContracts(contractsData)
     } catch (error) {
-      console.error("Erro ao carregar dados financeiros:", error);
-      alert("Erro ao carregar dados financeiros");
+      console.error('Erro ao carregar dados financeiros:', error)
+      alert('Erro ao carregar dados financeiros')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleOpenTransactionModal = () => {
-    setModalType("transaction");
+    setModalType('transaction')
     setFormData({
-      type: "entrada",
-      description: "",
-      value: "",
-      date: new Date().toISOString().split("T")[0],
-      category: "honorario",
-      paymentMethod: "pix",
-    });
-    setShowModal(true);
-  };
+      type: 'entrada',
+      description: '',
+      value: '',
+      date: new Date().toISOString().split('T')[0],
+      category: 'honorario',
+      paymentMethod: 'pix',
+    })
+    setShowModal(true)
+  }
 
   const handleOpenPaymentModal = (installment) => {
-    setModalType("payment");
-    setSelectedInstallment(installment);
+    setModalType('payment')
+    setSelectedInstallment(installment)
     setPaymentData({
       paidValue: installment.value.toString(),
-      paidDate: new Date().toISOString().split("T")[0],
-      paymentMethod: "pix",
-      notes: "",
-    });
-    setShowModal(true);
-  };
+      paidDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 'pix',
+      notes: '',
+    })
+    setShowModal(true)
+  }
 
   const handleCloseModal = () => {
-    setShowModal(false);
-    setModalType("transaction");
-    setSelectedInstallment(null);
-  };
+    setShowModal(false)
+    setModalType('transaction')
+    setSelectedInstallment(null)
+  }
 
   const handleTransactionChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
-    });
-  };
+    })
+  }
 
   const handlePaymentChange = (e) => {
     setPaymentData({
       ...paymentData,
       [e.target.name]: e.target.value,
-    });
-  };
+    })
+  }
 
   const handleSubmitTransaction = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+    e.preventDefault()
+    setSubmitting(true)
 
     try {
       const transactionData = {
@@ -124,148 +137,140 @@ const Financial = () => {
         category: formData.category,
         paymentMethod: formData.paymentMethod,
         createdBy: user.uid,
-      };
+      }
 
-      await transactionsService.add(transactionData);
-      alert("Transação registrada com sucesso!");
-      handleCloseModal();
-      loadData();
+      await transactionsService.add(user.uid, transactionData)
+      alert('Transação registrada com sucesso!')
+      handleCloseModal()
+      loadData()
     } catch (error) {
-      console.error("Erro ao registrar transação:", error);
-      alert("Erro ao registrar transação");
+      console.error('Erro ao registrar transação:', error)
+      alert('Erro ao registrar transação')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleSubmitPayment = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+    e.preventDefault()
+    setSubmitting(true)
 
     try {
-      const paidValue = parseFloat(paymentData.paidValue);
+      const paidValue = parseFloat(paymentData.paidValue)
 
       // Atualizar parcela
-      await installmentsService.markAsPaid(
-        selectedInstallment.id,
-        paidValue,
-        paymentData.paidDate
-      );
+      await installmentsService.markAsPaid(selectedInstallment.id, paidValue, paymentData.paidDate)
 
       // Registrar transação
-      const contract = contracts.find(
-        (c) => c.id === selectedInstallment.contractId
-      );
-      await transactionsService.add({
-        type: "entrada",
-        description: `Parcela ${selectedInstallment.number} - ${
-          contract?.clientName || "Cliente"
-        }`,
+      const contract = contracts.find((c) => c.id === selectedInstallment.contractId)
+      await transactionsService.add(user.uid, {
+        type: 'entrada',
+        description: `Parcela ${selectedInstallment.number} - ${contract?.clientName || 'Cliente'}`,
         value: paidValue,
         date: paymentData.paidDate,
-        category: "honorario",
+        category: 'honorario',
         paymentMethod: paymentData.paymentMethod,
         contractId: selectedInstallment.contractId,
         installmentId: selectedInstallment.id,
         createdBy: user.uid,
-      });
+      })
 
       // Atualizar valores do contrato
       if (contract) {
-        const newPaid = (contract.paid || 0) + paidValue;
-        const newPending = contract.value - newPaid;
-        await contractsService.update(contract.id, {
+        const newPaid = (contract.paid || 0) + paidValue
+        const newPending = contract.value - newPaid
+        await contractsService.update(user.uid, contract.id, {
           ...contract,
           paid: newPaid,
           pending: newPending,
-        });
+        })
       }
 
-      alert("Pagamento registrado com sucesso!");
-      handleCloseModal();
-      loadData();
+      alert('Pagamento registrado com sucesso!')
+      handleCloseModal()
+      loadData()
     } catch (error) {
-      console.error("Erro ao registrar pagamento:", error);
-      alert("Erro ao registrar pagamento");
+      console.error('Erro ao registrar pagamento:', error)
+      alert('Erro ao registrar pagamento')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleDeleteTransaction = async (id) => {
-    if (!window.confirm("Deseja realmente excluir esta transação?")) return;
+    if (!window.confirm('Deseja realmente excluir esta transação?')) return
 
     try {
-      await transactionsService.delete(id);
-      alert("Transação excluída com sucesso!");
-      loadData();
+      await transactionsService.delete(id)
+      alert('Transação excluída com sucesso!')
+      loadData()
     } catch (error) {
-      console.error("Erro ao excluir transação:", error);
-      alert("Erro ao excluir transação");
+      console.error('Erro ao excluir transação:', error)
+      alert('Erro ao excluir transação')
     }
-  };
+  }
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  };
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value)
+  }
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("pt-BR");
-  };
+    return new Date(date).toLocaleDateString('pt-BR')
+  }
 
   const getStatusColor = (status) => {
     const colors = {
-      pago: "bg-green-500 text-green-400",
-      pendente: "bg-yellow-500 text-yellow-400",
-      vencido: "bg-red-500 text-red-400",
-    };
-    return colors[status] || "bg-surface-medium text-gray-800";
-  };
+      pago: 'bg-green-500 text-green-400',
+      pendente: 'bg-yellow-500 text-yellow-400',
+      vencido: 'bg-red-500 text-red-400',
+    }
+    return colors[status] || 'bg-surface-medium text-gray-800'
+  }
 
   const getStatusIcon = (status) => {
     const icons = {
       pago: <CheckCircle className="w-4 h-4" />,
       pendente: <Clock className="w-4 h-4" />,
       vencido: <AlertCircle className="w-4 h-4" />,
-    };
-    return icons[status] || <Clock className="w-4 h-4" />;
-  };
+    }
+    return icons[status] || <Clock className="w-4 h-4" />
+  }
 
   // Cálculos
   const totalEntradas = transactions
-    .filter((t) => t.type === "entrada")
-    .reduce((sum, t) => sum + t.value, 0);
+    .filter((t) => t.type === 'entrada')
+    .reduce((sum, t) => sum + t.value, 0)
   const totalSaidas = transactions
-    .filter((t) => t.type === "saida")
-    .reduce((sum, t) => sum + t.value, 0);
-  const saldoAtual = totalEntradas - totalSaidas;
+    .filter((t) => t.type === 'saida')
+    .reduce((sum, t) => sum + t.value, 0)
+  const saldoAtual = totalEntradas - totalSaidas
 
   // Parcelas pendentes
   const pendingInstallments = installments
-    .filter((i) => i.status === "pendente")
+    .filter((i) => i.status === 'pendente')
     .map((inst) => {
-      const contract = contracts.find((c) => c.id === inst.contractId);
-      const dueDate = new Date(inst.dueDate);
-      const today = new Date();
-      const isOverdue = dueDate < today;
+      const contract = contracts.find((c) => c.id === inst.contractId)
+      const dueDate = new Date(inst.dueDate)
+      const today = new Date()
+      const isOverdue = dueDate < today
 
       return {
         ...inst,
         contract,
         isOverdue,
-        status: isOverdue ? "vencido" : "pendente",
-      };
+        status: isOverdue ? 'vencido' : 'pendente',
+      }
     })
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
 
   // Filtrar transações
   const filteredTransactions = transactions.filter((t) => {
-    if (filterType !== "all" && t.type !== filterType) return false;
-    return true;
-  });
+    if (filterType !== 'all' && t.type !== filterType) return false
+    return true
+  })
 
   if (loading) {
     return (
@@ -275,7 +280,7 @@ const Financial = () => {
           <p className="text-gray-300">Carregando dados financeiros...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -296,35 +301,29 @@ const Financial = () => {
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
           <div className="flex items-center gap-3 mb-4">
             <TrendingUp className="w-8 h-8" />
-            <span className="text-sm font-medium opacity-90">
-              Total de Entradas
-            </span>
+            <span className="text-sm font-medium opacity-90">Total de Entradas</span>
           </div>
           <p className="text-3xl font-bold">{formatCurrency(totalEntradas)}</p>
           <p className="text-sm opacity-75 mt-2">
-            {transactions.filter((t) => t.type === "entrada").length} transações
+            {transactions.filter((t) => t.type === 'entrada').length} transações
           </p>
         </div>
 
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
           <div className="flex items-center gap-3 mb-4">
             <TrendingDown className="w-8 h-8" />
-            <span className="text-sm font-medium opacity-90">
-              Total de Saídas
-            </span>
+            <span className="text-sm font-medium opacity-90">Total de Saídas</span>
           </div>
           <p className="text-3xl font-bold">{formatCurrency(totalSaidas)}</p>
           <p className="text-sm opacity-75 mt-2">
-            {transactions.filter((t) => t.type === "saida").length} transações
+            {transactions.filter((t) => t.type === 'saida').length} transações
           </p>
         </div>
 
         <div className="bg-gradient-to-br from-dark-600 to-dark-500 rounded-lg shadow-lg p-6 text-white">
           <div className="flex items-center gap-3 mb-4">
             <DollarSign className="w-8 h-8" />
-            <span className="text-sm font-medium opacity-90">
-              Saldo em Caixa
-            </span>
+            <span className="text-sm font-medium opacity-90">Saldo em Caixa</span>
           </div>
           <p className="text-3xl font-bold">{formatCurrency(saldoAtual)}</p>
           <p className="text-sm opacity-75 mt-2">Atualizado agora</p>
@@ -337,9 +336,7 @@ const Financial = () => {
         <div className="bg-background-tertiary rounded-lg shadow">
           <div className="p-6 border-b">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">
-                Parcelas Pendentes
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Parcelas Pendentes</h2>
               <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
                 {pendingInstallments.length}
               </span>
@@ -347,9 +344,7 @@ const Financial = () => {
           </div>
           <div className="p-6 max-h-96 overflow-y-auto">
             {pendingInstallments.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
-                Nenhuma parcela pendente
-              </p>
+              <p className="text-center text-gray-500 py-8">Nenhuma parcela pendente</p>
             ) : (
               <div className="space-y-3">
                 {pendingInstallments.map((inst) => (
@@ -357,18 +352,16 @@ const Financial = () => {
                     key={inst.id}
                     className={`p-4 rounded-lg border-l-4 ${
                       inst.isOverdue
-                        ? "bg-red-50 border-red-500"
-                        : "bg-surface-dark border-surface-medium"
+                        ? 'bg-red-50 border-red-500'
+                        : 'bg-surface-dark border-surface-medium'
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <p className="font-medium text-white">
-                          {inst.contract?.clientName || "Cliente"}
+                          {inst.contract?.clientName || 'Cliente'}
                         </p>
-                        <p className="text-sm text-gray-300">
-                          Parcela {inst.number}
-                        </p>
+                        <p className="text-sm text-gray-300">Parcela {inst.number}</p>
                       </div>
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${getStatusColor(
@@ -376,14 +369,12 @@ const Financial = () => {
                         )}`}
                       >
                         {getStatusIcon(inst.status)}
-                        {inst.isOverdue ? "Vencida" : "Pendente"}
+                        {inst.isOverdue ? 'Vencida' : 'Pendente'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <div>
-                        <p className="text-lg font-bold text-white">
-                          {formatCurrency(inst.value)}
-                        </p>
+                        <p className="text-lg font-bold text-white">{formatCurrency(inst.value)}</p>
                         <p className="text-xs text-gray-500">
                           Vencimento: {formatDate(inst.dueDate)}
                         </p>
@@ -406,9 +397,7 @@ const Financial = () => {
         <div className="bg-background-tertiary rounded-lg shadow">
           <div className="p-6 border-b">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">
-                Histórico de Transações
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Histórico de Transações</h2>
               <div className="flex gap-2">
                 <select
                   value={filterType}
@@ -424,9 +413,7 @@ const Financial = () => {
           </div>
           <div className="p-6 max-h-96 overflow-y-auto">
             {filteredTransactions.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
-                Nenhuma transação registrada
-              </p>
+              <p className="text-center text-gray-500 py-8">Nenhuma transação registrada</p>
             ) : (
               <div className="space-y-3">
                 {filteredTransactions.map((trans) => (
@@ -437,21 +424,17 @@ const Financial = () => {
                     <div className="flex items-center gap-3 flex-1">
                       <div
                         className={`p-2 rounded ${
-                          trans.type === "entrada"
-                            ? "bg-green-500"
-                            : "bg-red-500"
+                          trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'
                         }`}
                       >
-                        {trans.type === "entrada" ? (
+                        {trans.type === 'entrada' ? (
                           <TrendingUp className="w-4 h-4 text-green-600" />
                         ) : (
                           <TrendingDown className="w-4 h-4 text-red-600" />
                         )}
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-white">
-                          {trans.description}
-                        </p>
+                        <p className="text-sm font-medium text-white">{trans.description}</p>
                         <p className="text-xs text-gray-500">
                           {formatDate(trans.date)} • {trans.category}
                         </p>
@@ -459,12 +442,10 @@ const Financial = () => {
                     </div>
                     <span
                       className={`font-semibold ${
-                        trans.type === "entrada"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      {trans.type === "entrada" ? "+" : "-"}
+                      {trans.type === 'entrada' ? '+' : '-'}
                       {formatCurrency(trans.value)}
                     </span>
                   </div>
@@ -478,9 +459,7 @@ const Financial = () => {
       {/* Tabela Detalhada */}
       <div className="bg-background-tertiary rounded-lg shadow">
         <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold text-white">
-            Todas as Transações
-          </h2>
+          <h2 className="text-lg font-semibold text-white">Todas as Transações</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -509,38 +488,30 @@ const Financial = () => {
             <tbody className="divide-y divide-surface-dark">
               {filteredTransactions.map((trans) => (
                 <tr key={trans.id} className="hover:bg-surface-dark">
-                  <td className="px-6 py-4 text-sm text-white">
-                    {formatDate(trans.date)}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-white">{formatDate(trans.date)}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        trans.type === "entrada"
-                          ? "bg-green-500 text-green-400"
-                          : "bg-red-500 text-red-400"
+                        trans.type === 'entrada'
+                          ? 'bg-green-500 text-green-400'
+                          : 'bg-red-500 text-red-400'
                       }`}
                     >
-                      {trans.type === "entrada" ? "Entrada" : "Saída"}
+                      {trans.type === 'entrada' ? 'Entrada' : 'Saída'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-white">
-                    {trans.description}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">
-                    {trans.category}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-white">{trans.description}</td>
+                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">{trans.category}</td>
                   <td className="px-6 py-4 text-sm text-gray-300 capitalize">
                     {trans.paymentMethod}
                   </td>
                   <td className="px-6 py-4 text-sm text-right">
                     <span
                       className={`font-semibold ${
-                        trans.type === "entrada"
-                          ? "text-green-600"
-                          : "text-red-600"
+                        trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      {trans.type === "entrada" ? "+" : "-"}
+                      {trans.type === 'entrada' ? '+' : '-'}
                       {formatCurrency(trans.value)}
                     </span>
                   </td>
@@ -552,24 +523,20 @@ const Financial = () => {
       </div>
 
       {/* Modal de Transação */}
-      {showModal && modalType === "transaction" && (
+      {showModal && modalType === 'transaction' && (
         <Modal title="Nova Transação" onClose={handleCloseModal}>
           <form onSubmit={handleSubmitTransaction} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Tipo *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Tipo *</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, type: "entrada" })
-                    }
+                    onClick={() => setFormData({ ...formData, type: 'entrada' })}
                     className={`px-4 py-3 rounded-lg border-2 transition ${
-                      formData.type === "entrada"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-surface-medium hover:border-gray-400"
+                      formData.type === 'entrada'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-surface-medium hover:border-gray-400'
                     }`}
                   >
                     <TrendingUp className="w-5 h-5 mx-auto mb-1" />
@@ -577,11 +544,11 @@ const Financial = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, type: "saida" })}
+                    onClick={() => setFormData({ ...formData, type: 'saida' })}
                     className={`px-4 py-3 rounded-lg border-2 transition ${
-                      formData.type === "saida"
-                        ? "border-red-500 bg-red-50 text-red-700"
-                        : "border-surface-medium hover:border-gray-400"
+                      formData.type === 'saida'
+                        ? 'border-red-500 bg-red-50 text-red-700'
+                        : 'border-surface-medium hover:border-gray-400'
                     }`}
                   >
                     <TrendingDown className="w-5 h-5 mx-auto mb-1" />
@@ -591,9 +558,7 @@ const Financial = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Descrição *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Descrição *</label>
                 <input
                   type="text"
                   name="description"
@@ -606,9 +571,7 @@ const Financial = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Valor (R$) *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Valor (R$) *</label>
                 <input
                   type="number"
                   name="value"
@@ -623,9 +586,7 @@ const Financial = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Data *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Data *</label>
                 <input
                   type="date"
                   name="date"
@@ -637,9 +598,7 @@ const Financial = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Categoria *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Categoria *</label>
                 <select
                   name="category"
                   value={formData.category}
@@ -688,7 +647,7 @@ const Financial = () => {
                 className="flex-1 px-6 py-3 bg-dark-600 text-white rounded-lg hover:bg-dark-700 transition font-medium disabled:opacity-50"
                 disabled={submitting}
               >
-                {submitting ? "Salvando..." : "Registrar"}
+                {submitting ? 'Salvando...' : 'Registrar'}
               </button>
             </div>
           </form>
@@ -696,28 +655,25 @@ const Financial = () => {
       )}
 
       {/* Modal de Baixa de Pagamento */}
-      {showModal && modalType === "payment" && selectedInstallment && (
+      {showModal && modalType === 'payment' && selectedInstallment && (
         <Modal title="Registrar Pagamento" onClose={handleCloseModal}>
           <form onSubmit={handleSubmitPayment} className="space-y-4">
             <div className="bg-dark-500/10 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-dark-800 font-medium mb-2">
-                Informações da Parcela
-              </p>
+              <p className="text-sm text-dark-800 font-medium mb-2">Informações da Parcela</p>
               <div className="space-y-1 text-sm text-dark-700">
                 <p>
-                  <span className="font-medium">Cliente:</span>{" "}
+                  <span className="font-medium">Cliente:</span>{' '}
                   {selectedInstallment.contract?.clientName}
                 </p>
                 <p>
-                  <span className="font-medium">Parcela:</span>{" "}
-                  {selectedInstallment.number}
+                  <span className="font-medium">Parcela:</span> {selectedInstallment.number}
                 </p>
                 <p>
-                  <span className="font-medium">Valor:</span>{" "}
+                  <span className="font-medium">Valor:</span>{' '}
                   {formatCurrency(selectedInstallment.value)}
                 </p>
                 <p>
-                  <span className="font-medium">Vencimento:</span>{" "}
+                  <span className="font-medium">Vencimento:</span>{' '}
                   {formatDate(selectedInstallment.dueDate)}
                 </p>
               </div>
@@ -775,9 +731,7 @@ const Financial = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Observações
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Observações</label>
                 <textarea
                   name="notes"
                   value={paymentData.notes}
@@ -803,13 +757,13 @@ const Financial = () => {
                 className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50"
                 disabled={submitting}
               >
-                {submitting ? "Processando..." : "Confirmar Pagamento"}
+                {submitting ? 'Processando...' : 'Confirmar Pagamento'}
               </button>
             </div>
           </form>
         </Modal>
       )}
     </div>
-  );
-};
-export default Financial;
+  )
+}
+export default Financial

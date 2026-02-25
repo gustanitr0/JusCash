@@ -1,45 +1,45 @@
-import React, { useState } from 'react';
-import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../../../contexts/auth';
+import React, { useState } from 'react'
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '../../../contexts/auth'
 
 const Login = ({ onSwitchToRegister }) => {
-  const { login, error } = useAuth();
+  const { login, error } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState('');
+    password: '',
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [localError, setLocalError] = useState('')
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    });
-    setLocalError('');
-  };
+      [e.target.name]: e.target.value,
+    })
+    setLocalError('')
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLocalError('');
+    e.preventDefault()
+    setLocalError('')
 
     // Validações
     if (!formData.email || !formData.password) {
-      setLocalError('Preencha todos os campos');
-      return;
+      setLocalError('Preencha todos os campos')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password)
 
     if (!result.success) {
-      setLocalError(result.error);
+      setLocalError(result.error)
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-500/10 to-purple-600 flex items-center justify-center p-4">
@@ -68,9 +68,7 @@ const Login = ({ onSwitchToRegister }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                E-mail
-              </label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">E-mail</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
@@ -87,9 +85,7 @@ const Login = ({ onSwitchToRegister }) => {
 
             {/* Senha */}
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Senha
-              </label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">Senha</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
@@ -156,7 +152,7 @@ const Login = ({ onSwitchToRegister }) => {
         </p>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Login;
+export default Login

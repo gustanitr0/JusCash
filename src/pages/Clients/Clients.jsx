@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Eye, Edit, Trash2, Mail, Phone, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import { clientsService } from '../../firebase/services/firebaseServices/FirebaseServices';
-import { useAuth } from '../../contexts/auth';
-import Modal from '../../components/Modal/Modal';
+import React, { useState, useEffect } from 'react'
+import {
+  Plus,
+  Search,
+  Eye,
+  Edit,
+  Trash2,
+  Mail,
+  Phone,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react'
+import { clientsService } from '../../services/FirebaseServices'
+import { useAuth } from '../../contexts/auth'
+import Modal from '../../components/Modal/Modal'
 
 const Clients = () => {
-  const { user } = useAuth();
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [selectedClient, setSelectedClient] = useState(null);
+  const { user } = useAuth()
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [selectedClient, setSelectedClient] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,34 +31,44 @@ const Clients = () => {
     city: '',
     state: '',
     zipCode: '',
-    notes: ''
-  });
-  const [formError, setFormError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+    notes: '',
+  })
+  const [formError, setFormError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    loadClients();
-  }, []);
+    if (user?.uid) {
+      loadClients()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const loadClients = async () => {
     try {
-      setLoading(true);
-      const data = await clientsService.getAll();
-      setClients(data);
+      setLoading(true)
+
+      if (!user?.uid) {
+        console.error('user.uid não disponivel')
+        return
+      }
+
+      const data = await clientsService.getAll(user.uid)
+      setClients(data)
     } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
-      alert('Erro ao carregar clientes');
+      console.error('Erro ao carregar clientes:', error)
+      alert('Erro ao carregar clientes')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleOpenModal = (client = null) => {
     if (client) {
-      setSelectedClient(client);
-      setFormData(client);
+      setSelectedClient(client)
+      setFormData(client)
     } else {
-      setSelectedClient(null);
+      setSelectedClient(null)
       setFormData({
         name: '',
         email: '',
@@ -60,94 +81,97 @@ const Clients = () => {
         state: '',
         number: '',
         complement: '',
-        notes: ''
-      });
+        notes: '',
+      })
     }
-    setFormError('');
-    setShowModal(true);
-  };
+    setFormError('')
+    setShowModal(true)
+  }
 
   const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedClient(null);
-    setFormError('');
-  };
+    setShowModal(false)
+    setSelectedClient(null)
+    setFormError('')
+  }
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    });
-    setFormError('');
-  };
+      [e.target.name]: e.target.value,
+    })
+    setFormError('')
+  }
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      setFormError('Nome é obrigatório');
-      return false;
+      setFormError('Nome é obrigatório')
+      return false
     }
     if (!formData.email.trim()) {
-      setFormError('E-mail é obrigatório');
-      return false;
+      setFormError('E-mail é obrigatório')
+      return false
     }
     if (!formData.cpf.trim()) {
-      setFormError('CPF/CNPJ é obrigatório');
-      return false;
+      setFormError('CPF/CNPJ é obrigatório')
+      return false
     }
-    return true;
-  };
+    return true
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
+    e.preventDefault()
 
-    setSubmitting(true);
+    if (!validateForm()) return
+
+    setSubmitting(true)
 
     try {
       const clientData = {
         ...formData,
-        createdBy: user.uid
-      };
+        createdBy: user.uid,
+      }
 
       if (selectedClient) {
-        await clientsService.update(selectedClient.id, clientData);
-        alert('Cliente atualizado com sucesso!');
+        await clientsService.update(user.uid, selectedClient.id, clientData)
+        alert('Cliente atualizado com sucesso!')
       } else {
-        await clientsService.add(clientData);
-        alert('Cliente cadastrado com sucesso!');
+        await clientsService.add(user.uid, clientData)
+        alert('Cliente cadastrado com sucesso!')
       }
-      
-      handleCloseModal();
-      loadClients();
+
+      handleCloseModal()
+      loadClients()
     } catch (error) {
-      console.error('Erro ao salvar cliente:', error);
-      setFormError('Erro ao salvar cliente. Tente novamente.');
+      console.error('Erro ao salvar cliente:', error)
+      setFormError('Erro ao salvar cliente. Tente novamente.')
     } finally {
-      setSubmitting(false);
+      setSubmitting(false)
     }
-  };
+  }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Deseja realmente excluir este cliente? Esta ação não pode ser desfeita.')) {
-      return;
+    if (
+      !window.confirm('Deseja realmente excluir este cliente? Esta ação não pode ser desfeita.')
+    ) {
+      return
     }
 
     try {
-      await clientsService.delete(id);
-      alert('Cliente excluído com sucesso!');
-      loadClients();
+      await clientsService.delete(user.uid, id)
+      alert('Cliente excluído com sucesso!')
+      loadClients()
     } catch (error) {
-      console.error('Erro ao excluir cliente:', error);
-      alert('Erro ao excluir cliente');
+      console.error('Erro ao excluir cliente:', error)
+      alert('Erro ao excluir cliente')
     }
-  };
+  }
 
-  const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.cpfCnpj.includes(searchTerm)
-  );
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.cpfCnpj.includes(searchTerm)
+  )
 
   if (loading) {
     return (
@@ -157,14 +181,14 @@ const Clients = () => {
           <p className="text-gray-300">Carregando clientes...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Clientes</h1>
-        <button 
+        <button
           onClick={() => handleOpenModal()}
           className="bg-dark-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
         >
@@ -197,7 +221,7 @@ const Clients = () => {
               {searchTerm ? 'Tente ajustar sua busca' : 'Comece cadastrando seu primeiro cliente'}
             </p>
             {!searchTerm && (
-              <button 
+              <button
                 onClick={() => handleOpenModal()}
                 className="bg-dark-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
               >
@@ -210,16 +234,28 @@ const Clients = () => {
             <table className="w-full">
               <thead className="bg-surface-dark">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contato</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cadastrado em</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contato
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tipo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cadastrado em
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ações
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-background-tertiary divide-y divide-surface-dark">
-                {filteredClients.map(client => (
+                {filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-surface-dark">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -250,17 +286,17 @@ const Clients = () => {
                     <td className="px-6 py-4 text-sm text-gray-300">
                       {client.city && client.state ? `${client.city}, ${client.state}` : '-'}
                     </td>
-                    { /*<td className='px-6 py-4 text-sm text-white- font-mono'>{client.createdAt}</td> */ }
+                    {/*<td className='px-6 py-4 text-sm text-white- font-mono'>{client.createdAt}</td> */}
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           onClick={() => handleOpenModal(client)}
                           className="text-dark-400 hover:text-blue-400 p-2 hover:bg-dark-500 rounded transition"
                           title="Editar"
                         >
                           <Edit className="w-5 h-5" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(client.id)}
                           className="text-red-600 hover:text-red-400 p-2 hover:bg-red-250 rounded transition"
                           title="Excluir"
@@ -279,7 +315,7 @@ const Clients = () => {
 
       {/* Modal de Cadastro/Edição */}
       {showModal && (
-        <Modal 
+        <Modal
           title={selectedClient ? 'Editar Cliente' : 'Novo Cliente'}
           onClose={handleCloseModal}
           size="default"
@@ -309,9 +345,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  E-mail *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">E-mail *</label>
                 <input
                   type="email"
                   name="email"
@@ -324,9 +358,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Telefone
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Telefone</label>
                 <input
                   type="tel"
                   name="phone"
@@ -338,9 +370,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  CPF *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">CPF *</label>
                 <input
                   type="text"
                   name="cpf"
@@ -353,9 +383,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  RG *
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">RG *</label>
                 <input
                   type="text"
                   name="rg"
@@ -365,12 +393,10 @@ const Clients = () => {
                   className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
-              </div>              
+              </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  CEP
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">CEP</label>
                 <input
                   type="text"
                   name="zipCode"
@@ -396,9 +422,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Cidade
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Cidade</label>
                 <input
                   type="text"
                   name="city"
@@ -410,9 +434,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Estado
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Estado</label>
                 <input
                   type="text"
                   name="state"
@@ -425,9 +447,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Numero
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Numero</label>
                 <input
                   type="text"
                   name="number"
@@ -439,9 +459,7 @@ const Clients = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Complemento
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Complemento</label>
                 <input
                   type="text"
                   name="complement"
@@ -454,9 +472,7 @@ const Clients = () => {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Observações
-                </label>
+                <label className="block text-sm font-medium text-gray-200 mb-2">Observações</label>
                 <textarea
                   name="notes"
                   value={formData.notes}
@@ -489,7 +505,7 @@ const Clients = () => {
         </Modal>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Clients;
+export default Clients

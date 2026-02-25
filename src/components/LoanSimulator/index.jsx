@@ -1,48 +1,56 @@
-import React, { useState } from 'react';
-import { DollarSign, Calendar, TrendingUp, AlertCircle, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import React, { useState } from 'react'
+import {
+  DollarSign,
+  Calendar,
+  TrendingUp,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Info,
+} from 'lucide-react'
 
 const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
-  const [showAmortization, setShowAmortization] = useState(false);
-  const [selectedInstallment, setSelectedInstallment] = useState(null);
+  const [showAmortization, setShowAmortization] = useState(false)
+  const [selectedInstallment, setSelectedInstallment] = useState(null)
 
   // Gerar tabela de amortização
   const generateAmortizationTable = () => {
-    const principal = parseFloat(formData.value) || 0;
-    const rate = parseFloat(formData.interestRate) || 0;
-    const periods = parseInt(formData.installments) || 1;
-    const installmentValue = formData.installmentValue || 0;
-    const startDate = new Date(formData.firstInstallmentDate);
+    const principal = parseFloat(formData.value) || 0
+    const rate = parseFloat(formData.interestRate) || 0
+    const periods = parseInt(formData.installments) || 1
+    const installmentValue = formData.installmentValue || 0
+    const startDate = new Date(formData.firstInstallmentDate)
 
     const frequencyDays = {
-      'diaria': 1,
-      'semanal': 7,
-      'quinzenal': 15,
-      'mensal': 30,
-      'trimestral': 90
-    };
+      diaria: 1,
+      semanal: 7,
+      quinzenal: 15,
+      mensal: 30,
+      trimestral: 90,
+    }
 
-    const daysToAdd = frequencyDays[formData.frequency] || 30;
-    const table = [];
-    let remainingBalance = formData.totalReceivable || principal;
+    const daysToAdd = frequencyDays[formData.frequency] || 30
+    const table = []
+    let remainingBalance = formData.totalReceivable || principal
 
     for (let i = 1; i <= periods; i++) {
-      const dueDate = new Date(startDate);
-      dueDate.setDate(dueDate.getDate() + (daysToAdd * (i - 1)));
+      const dueDate = new Date(startDate)
+      dueDate.setDate(dueDate.getDate() + daysToAdd * (i - 1))
 
-      let interestPortion = 0;
-      let principalPortion = 0;
+      let interestPortion = 0
+      let principalPortion = 0
 
       if (formData.interestType === 'simples') {
         // Juros simples: distribuição igual
-        interestPortion = (formData.totalInterest || 0) / periods;
-        principalPortion = installmentValue - interestPortion;
+        interestPortion = (formData.totalInterest || 0) / periods
+        principalPortion = installmentValue - interestPortion
       } else {
         // Juros compostos: Price (sistema francês)
-        interestPortion = remainingBalance * (rate / 100);
-        principalPortion = installmentValue - interestPortion;
+        interestPortion = remainingBalance * (rate / 100)
+        principalPortion = installmentValue - interestPortion
       }
 
-      remainingBalance -= principalPortion;
+      remainingBalance -= principalPortion
 
       table.push({
         number: i,
@@ -50,18 +58,18 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
         installmentValue: installmentValue,
         principalPortion: principalPortion,
         interestPortion: interestPortion,
-        remainingBalance: Math.max(0, remainingBalance)
-      });
+        remainingBalance: Math.max(0, remainingBalance),
+      })
     }
 
-    return table;
-  };
+    return table
+  }
 
-  const amortizationTable = generateAmortizationTable();
+  const amortizationTable = generateAmortizationTable()
 
   // Calcular totais
-  const totalPrincipal = amortizationTable.reduce((sum, row) => sum + row.principalPortion, 0);
-  const totalInterest = amortizationTable.reduce((sum, row) => sum + row.interestPortion, 0);
+  const totalPrincipal = amortizationTable.reduce((sum, row) => sum + row.principalPortion, 0)
+  const totalInterest = amortizationTable.reduce((sum, row) => sum + row.interestPortion, 0)
 
   return (
     <div className="space-y-6">
@@ -77,9 +85,13 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
           <div className="bg-surface-dark p-4 rounded-lg border border-surface-medium">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="w-4 h-4 text-blue-400" />
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Valor Emprestado</span>
+              <span className="text-xs text-gray-400 uppercase tracking-wide">
+                Valor Emprestado
+              </span>
             </div>
-            <p className="text-2xl font-bold text-white">{formatCurrency(parseFloat(formData.value) || 0)}</p>
+            <p className="text-2xl font-bold text-white">
+              {formatCurrency(parseFloat(formData.value) || 0)}
+            </p>
           </div>
 
           <div className="bg-surface-dark p-4 rounded-lg border border-surface-medium">
@@ -87,9 +99,12 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
               <TrendingUp className="w-4 h-4 text-yellow-400" />
               <span className="text-xs text-gray-400 uppercase tracking-wide">Juros Total</span>
             </div>
-            <p className="text-2xl font-bold text-yellow-400">{formatCurrency(formData.totalInterest)}</p>
+            <p className="text-2xl font-bold text-yellow-400">
+              {formatCurrency(formData.totalInterest)}
+            </p>
             <p className="text-xs text-gray-500 mt-1">
-              {formData.interestRate}% {formData.interestType === 'simples' ? 'simples' : 'compostos'}
+              {formData.interestRate}%{' '}
+              {formData.interestType === 'simples' ? 'simples' : 'compostos'}
             </p>
           </div>
 
@@ -98,7 +113,9 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
               <DollarSign className="w-4 h-4 text-green-400" />
               <span className="text-xs text-gray-400 uppercase tracking-wide">Total a Receber</span>
             </div>
-            <p className="text-2xl font-bold text-green-400">{formatCurrency(formData.totalReceivable)}</p>
+            <p className="text-2xl font-bold text-green-400">
+              {formatCurrency(formData.totalReceivable)}
+            </p>
           </div>
         </div>
 
@@ -111,30 +128,37 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
             </div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Valor da Parcela</span>
-              <span className="text-lg font-bold text-dark-400">{formatCurrency(formData.installmentValue)}</span>
+              <span className="text-lg font-bold text-dark-400">
+                {formatCurrency(formData.installmentValue)}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">Frequência</span>
-              <span className="text-sm font-medium text-gray-300 capitalize">{formData.frequency}</span>
+              <span className="text-sm font-medium text-gray-300 capitalize">
+                {formData.frequency}
+              </span>
             </div>
           </div>
 
           <div className="bg-surface-dark/50 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Data do Contrato</span>
-              <span className="text-sm font-medium text-gray-300">{formatDate(formData.startDate)}</span>
+              <span className="text-sm font-medium text-gray-300">
+                {formatDate(formData.startDate)}
+              </span>
             </div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-gray-400">Primeira Parcela</span>
-              <span className="text-sm font-medium text-gray-300">{formatDate(formData.firstInstallmentDate)}</span>
+              <span className="text-sm font-medium text-gray-300">
+                {formatDate(formData.firstInstallmentDate)}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">Última Parcela</span>
               <span className="text-sm font-medium text-gray-300">
-                {amortizationTable.length > 0 
+                {amortizationTable.length > 0
                   ? formatDate(amortizationTable[amortizationTable.length - 1].dueDate)
-                  : '-'
-                }
+                  : '-'}
               </span>
             </div>
           </div>
@@ -150,7 +174,11 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
                 Taxa de {formData.lateFeeRate}% ao dia será aplicada sobre parcelas vencidas
               </p>
               <p className="text-xs text-gray-400 mt-2">
-                Exemplo: Atraso de 30 dias = {formatCurrency(formData.installmentValue * (parseFloat(formData.lateFeeRate) / 100) * 30)} de juros adicionais
+                Exemplo: Atraso de 30 dias ={' '}
+                {formatCurrency(
+                  formData.installmentValue * (parseFloat(formData.lateFeeRate) / 100) * 30
+                )}{' '}
+                de juros adicionais
               </p>
             </div>
           </div>
@@ -161,17 +189,18 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-400">Composição do Valor Total</span>
             <span className="text-xs text-gray-500">
-              Principal: {((parseFloat(formData.value) / formData.totalReceivable) * 100).toFixed(1)}% | 
-              Juros: {((formData.totalInterest / formData.totalReceivable) * 100).toFixed(1)}%
+              Principal:{' '}
+              {((parseFloat(formData.value) / formData.totalReceivable) * 100).toFixed(1)}% | Juros:{' '}
+              {((formData.totalInterest / formData.totalReceivable) * 100).toFixed(1)}%
             </span>
           </div>
           <div className="w-full bg-surface-dark rounded-full h-4 overflow-hidden flex">
-            <div 
+            <div
               className="bg-blue-500 h-full transition-all"
               style={{ width: `${(parseFloat(formData.value) / formData.totalReceivable) * 100}%` }}
               title={`Principal: ${formatCurrency(parseFloat(formData.value))}`}
             />
-            <div 
+            <div
               className="bg-yellow-500 h-full transition-all"
               style={{ width: `${(formData.totalInterest / formData.totalReceivable) * 100}%` }}
               title={`Juros: ${formatCurrency(formData.totalInterest)}`}
@@ -214,11 +243,11 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
               <div className="flex items-start gap-2 text-xs text-gray-400">
                 <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <p>
-                  Esta tabela mostra como cada parcela será dividida entre pagamento do principal e juros.
-                  {formData.interestType === 'simples' 
+                  Esta tabela mostra como cada parcela será dividida entre pagamento do principal e
+                  juros.
+                  {formData.interestType === 'simples'
                     ? ' Juros simples: juros calculados apenas sobre o valor inicial.'
-                    : ' Juros compostos: sistema Price - parcelas fixas, juros sobre saldo devedor.'
-                  }
+                    : ' Juros compostos: sistema Price - parcelas fixas, juros sobre saldo devedor.'}
                 </p>
               </div>
             </div>
@@ -227,20 +256,36 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
               <table className="w-full">
                 <thead className="bg-surface-dark">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Nº</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Vencimento</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Parcela</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Amortização</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Juros</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Saldo Devedor</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                      Nº
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">
+                      Vencimento
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">
+                      Parcela
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">
+                      Amortização
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">
+                      Juros
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">
+                      Saldo Devedor
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-dark">
                   {amortizationTable.map((row, index) => (
-                    <tr 
+                    <tr
                       key={row.number}
                       className="hover:bg-surface-dark/50 transition cursor-pointer"
-                      onClick={() => setSelectedInstallment(selectedInstallment === row.number ? null : row.number)}
+                      onClick={() =>
+                        setSelectedInstallment(
+                          selectedInstallment === row.number ? null : row.number
+                        )
+                      }
                     >
                       <td className="px-4 py-3 text-sm font-medium text-white">{row.number}</td>
                       <td className="px-4 py-3 text-sm text-gray-300">{formatDate(row.dueDate)}</td>
@@ -258,10 +303,12 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
                       </td>
                     </tr>
                   ))}
-                  
+
                   {/* Linha de Totais */}
                   <tr className="bg-surface-dark font-semibold">
-                    <td colSpan="2" className="px-4 py-3 text-sm text-white">TOTAIS</td>
+                    <td colSpan="2" className="px-4 py-3 text-sm text-white">
+                      TOTAIS
+                    </td>
                     <td className="px-4 py-3 text-sm text-right text-dark-400">
                       {formatCurrency(formData.totalReceivable)}
                     </td>
@@ -292,7 +339,12 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
                       {formatCurrency(amortizationTable[selectedInstallment - 1].principalPortion)}
                     </p>
                     <p className="text-gray-500 text-xs mt-1">
-                      {((amortizationTable[selectedInstallment - 1].principalPortion / formData.installmentValue) * 100).toFixed(1)}% da parcela
+                      {(
+                        (amortizationTable[selectedInstallment - 1].principalPortion /
+                          formData.installmentValue) *
+                        100
+                      ).toFixed(1)}
+                      % da parcela
                     </p>
                   </div>
                   <div>
@@ -301,7 +353,12 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
                       {formatCurrency(amortizationTable[selectedInstallment - 1].interestPortion)}
                     </p>
                     <p className="text-gray-500 text-xs mt-1">
-                      {((amortizationTable[selectedInstallment - 1].interestPortion / formData.installmentValue) * 100).toFixed(1)}% da parcela
+                      {(
+                        (amortizationTable[selectedInstallment - 1].interestPortion /
+                          formData.installmentValue) *
+                        100
+                      ).toFixed(1)}
+                      % da parcela
                     </p>
                   </div>
                   <div>
@@ -313,7 +370,13 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
                   <div>
                     <p className="text-gray-400">% Quitado</p>
                     <p className="text-green-400 font-semibold mt-1">
-                      {(((formData.totalReceivable - amortizationTable[selectedInstallment - 1].remainingBalance) / formData.totalReceivable) * 100).toFixed(1)}%
+                      {(
+                        ((formData.totalReceivable -
+                          amortizationTable[selectedInstallment - 1].remainingBalance) /
+                          formData.totalReceivable) *
+                        100
+                      ).toFixed(1)}
+                      %
                     </p>
                   </div>
                 </div>
@@ -330,21 +393,31 @@ const LoanSimulator = ({ formData, formatCurrency, formatDate }) => {
           <div className="text-sm text-blue-300">
             <p className="font-medium mb-2">Informações Importantes:</p>
             <ul className="space-y-1 text-xs text-blue-200">
-              <li>• Esta é uma simulação. Os valores podem sofrer pequenas variações de arredondamento.</li>
-              <li>• {formData.interestType === 'simples' 
-                ? 'Juros simples: os juros são calculados apenas sobre o valor inicial emprestado.'
-                : 'Juros compostos (Price): parcelas fixas, mas a proporção de juros diminui ao longo do tempo.'
-              }</li>
-              <li>• As datas de vencimento são calculadas automaticamente com base na frequência escolhida.</li>
+              <li>
+                • Esta é uma simulação. Os valores podem sofrer pequenas variações de
+                arredondamento.
+              </li>
+              <li>
+                •{' '}
+                {formData.interestType === 'simples'
+                  ? 'Juros simples: os juros são calculados apenas sobre o valor inicial emprestado.'
+                  : 'Juros compostos (Price): parcelas fixas, mas a proporção de juros diminui ao longo do tempo.'}
+              </li>
+              <li>
+                • As datas de vencimento são calculadas automaticamente com base na frequência
+                escolhida.
+              </li>
               {formData.lateFeeEnabled && (
-                <li className="text-red-300">• Juros adicionais serão aplicados em caso de atraso no pagamento.</li>
+                <li className="text-red-300">
+                  • Juros adicionais serão aplicados em caso de atraso no pagamento.
+                </li>
               )}
             </ul>
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default LoanSimulator;
+export default LoanSimulator

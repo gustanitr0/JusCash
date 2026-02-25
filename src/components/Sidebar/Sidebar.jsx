@@ -1,85 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart3, Users, FileText, DollarSign, TrendingUp, X, Menu } from 'lucide-react';
+import React, { useState, useEffect } from 'react'
+import { BarChart3, Users, FileText, DollarSign, TrendingUp, X, Menu } from 'lucide-react'
 
 const Sidebar = ({ currentView, setCurrentView }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   // Detectar tamanho da tela
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 1024); // lg breakpoint do Tailwind
-      
+      setIsMobile(window.innerWidth < 1024) // lg breakpoint do Tailwind
+
       // Fechar menu mobile ao redimensionar para desktop
       if (window.innerWidth >= 1024) {
-        setIsMobileMenuOpen(false);
+        setIsMobileMenuOpen(false)
       }
-    };
+    }
 
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
 
   // Fechar menu ao trocar de página (mobile)
   const handleNavigation = (viewId) => {
-    setCurrentView(viewId);
-    setIsMobileMenuOpen(false);
-  };
+    setCurrentView(viewId)
+    setIsMobileMenuOpen(false)
+  }
 
   // Fechar menu ao clicar fora (mobile)
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (isMobileMenuOpen && !e.target.closest('.mobile-menu') && !e.target.closest('.hamburger-btn')) {
-        setIsMobileMenuOpen(false);
+      if (
+        isMobileMenuOpen &&
+        !e.target.closest('.mobile-menu') &&
+        !e.target.closest('.hamburger-btn')
+      ) {
+        setIsMobileMenuOpen(false)
       }
-    };
-
-    if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
     }
 
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobileMenuOpen]);
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isMobileMenuOpen])
 
   // Prevenir scroll quando menu mobile está aberto
   useEffect(() => {
     if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = 'unset'
     }
     return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isMobileMenuOpen]);
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuOpen])
 
   const menuItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
     { id: 'clients', icon: Users, label: 'Clientes' },
     { id: 'contracts', icon: FileText, label: 'Empréstimos' },
     { id: 'financial', icon: DollarSign, label: 'Financeiro' },
-    { id: 'reports', icon: TrendingUp, label: 'Relatórios' }
-  ];
+    { id: 'reports', icon: TrendingUp, label: 'Relatórios' },
+  ]
 
   const MenuItem = ({ item, onClick }) => {
-    const Icon = item.icon;
-    const isActive = currentView === item.id;
+    const Icon = item.icon
+    const isActive = currentView === item.id
 
     return (
       <button
         onClick={() => onClick(item.id)}
         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-          isActive 
-            ? 'bg-gradient-purple text-white shadow-lg glow-purple' 
+          isActive
+            ? 'bg-gradient-purple text-white shadow-lg glow-purple'
             : 'text-gray-400 hover:bg-surface-dark hover:text-white'
         }`}
       >
         <Icon className="w-5 h-5 flex-shrink-0" />
         <span className="font-medium">{item.label}</span>
       </button>
-    );
-  };
+    )
+  }
 
   return (
     <>
@@ -89,17 +93,13 @@ const Sidebar = ({ currentView, setCurrentView }) => {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="hamburger-btn fixed top-4 left-4 z-50 lg:hidden p-3 bg-background-tertiary border border-surface-dark rounded-lg shadow-lg text-gray-300 hover:text-white transition"
         >
-          {isMobileMenuOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <Menu className="w-6 h-6" />
-          )}
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       )}
 
       {/* Overlay (Mobile) */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -137,12 +137,8 @@ const Sidebar = ({ currentView, setCurrentView }) => {
 
           {/* Menu Items */}
           <nav className="space-y-2">
-            {menuItems.map(item => (
-              <MenuItem 
-                key={item.id} 
-                item={item} 
-                onClick={handleNavigation}
-              />
+            {menuItems.map((item) => (
+              <MenuItem key={item.id} item={item} onClick={handleNavigation} />
             ))}
           </nav>
 
@@ -158,7 +154,7 @@ const Sidebar = ({ currentView, setCurrentView }) => {
         </div>
       </aside>
     </>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

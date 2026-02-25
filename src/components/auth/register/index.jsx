@@ -1,81 +1,91 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User, Phone, Briefcase, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
-import { useAuth } from '../../../contexts/auth';
+import React, { useState } from 'react'
+import {
+  Mail,
+  Lock,
+  User,
+  Phone,
+  Briefcase,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  CheckCircle,
+} from 'lucide-react'
+import { useAuth } from '../../../contexts/auth'
 
 const Register = ({ onSwitchToLogin }) => {
-  const { register, error } = useAuth();
+  const { register, error } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'assistente'
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [localError, setLocalError] = useState('');
-  const [success, setSuccess] = useState(false);
+    role: 'assistente',
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [localError, setLocalError] = useState('')
+  const [success, setSuccess] = useState(false)
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    });
-    setLocalError('');
-  };
+      [e.target.name]: e.target.value,
+    })
+    setLocalError('')
+  }
 
   const validateForm = () => {
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      setLocalError('Preencha todos os campos obrigatórios');
-      return false;
+      setLocalError('Preencha todos os campos obrigatórios')
+      return false
     }
 
     if (formData.password.length < 6) {
-      setLocalError('A senha deve ter pelo menos 6 caracteres');
-      return false;
+      setLocalError('A senha deve ter pelo menos 6 caracteres')
+      return false
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setLocalError('As senhas não coincidem');
-      return false;
+      setLocalError('As senhas não coincidem')
+      return false
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
-      setLocalError('E-mail inválido');
-      return false;
+      setLocalError('E-mail inválido')
+      return false
     }
 
-    return true;
-  };
+    return true
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLocalError('');
-    setSuccess(false);
+    e.preventDefault()
+    setLocalError('')
+    setSuccess(false)
 
     if (!validateForm()) {
-      return;
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
-    const { confirmPassword, ...userData } = formData;
-    const result = await register(formData.email, formData.password, userData);
+    const { confirmPassword, ...userData } = formData
+    const result = await register(formData.email, formData.password, userData)
 
     if (result.success) {
-      setSuccess(true);
+      setSuccess(true)
       setTimeout(() => {
         // Redirecionar ou fazer login automático
-      }, 2000);
+      }, 2000)
     } else {
-      setLocalError(result.error);
+      setLocalError(result.error)
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-500/10 to-purple-600 flex items-center justify-center p-4">
@@ -131,9 +141,7 @@ const Register = ({ onSwitchToLogin }) => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                E-mail *
-              </label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">E-mail *</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
@@ -150,9 +158,7 @@ const Register = ({ onSwitchToLogin }) => {
 
             {/* Telefone */}
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Telefone
-              </label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">Telefone</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
@@ -169,9 +175,7 @@ const Register = ({ onSwitchToLogin }) => {
 
             {/* Senha */}
             <div>
-              <label className="block text-sm font-medium text-gray-200 mb-2">
-                Senha *
-              </label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">Senha *</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                 <input
@@ -214,7 +218,11 @@ const Register = ({ onSwitchToLogin }) => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -249,7 +257,7 @@ const Register = ({ onSwitchToLogin }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Register;
+export default Register

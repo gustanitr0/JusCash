@@ -1,121 +1,152 @@
-import React, { useState, useEffect } from 'react';
-import { Download, Calendar, Users, FileText, DollarSign, TrendingUp, AlertCircle, Filter, BarChart3 } from 'lucide-react';
-import { clientsService, contractsService, installmentsService, transactionsService } from '../../firebase/services/firebaseServices/FirebaseServices';
+import React, { useState, useEffect } from 'react'
+import {
+  Download,
+  Calendar,
+  Users,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  AlertCircle,
+  Filter,
+  BarChart3,
+} from 'lucide-react'
+import {
+  clientsService,
+  contractsService,
+  installmentsService,
+  transactionsService,
+} from '../../services/FirebaseServices'
+import { useAuth } from '../../contexts/auth'
 
 const Reports = () => {
-  const [clients, setClients] = useState([]);
-  const [contracts, setContracts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [installments, setInstallments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [reportType, setReportType] = useState('overview');
+  const { user } = useAuth()
+  const [clients, setClients] = useState([])
+  const [contracts, setContracts] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [installments, setInstallments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [reportType, setReportType] = useState('overview')
   const [filters, setFilters] = useState({
     period: 'month',
     clientId: 'all',
     status: 'all',
     startDate: '',
-    endDate: ''
-  });
+    endDate: '',
+  })
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.uid) {
+      loadData()
+    } else {
+      setLoading(false)
+    }
+  }, [user])
 
   const loadData = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
+
+      if (!user?.uid) {
+        console.error('user.uid não disponivel')
+        return
+      }
       const [clientsData, contractsData, transactionsData, installmentsData] = await Promise.all([
-        clientsService.getAll(),
-        contractsService.getAll(),
-        transactionsService.getAll(),
-        installmentsService.getAll()
-      ]);
-      setClients(clientsData);
-      setContracts(contractsData);
-      setTransactions(transactionsData);
-      setInstallments(installmentsData);
+        clientsService.getAll(user.uid),
+        contractsService.getAll(user.uid),
+        transactionsService.getAll(user.uid),
+        installmentsService.getAll(user.uid),
+      ])
+      setClients(clientsData)
+      setContracts(contractsData)
+      setTransactions(transactionsData)
+      setInstallments(installmentsData)
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados');
+      console.error('Erro ao carregar dados:', error)
+      alert('Erro ao carregar dados')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-  };
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('pt-BR');
-  };
+    return new Date(date).toLocaleDateString('pt-BR')
+  }
 
   const handleFilterChange = (e) => {
     setFilters({
       ...filters,
-      [e.target.name]: e.target.value
-    });
-  };
+      [e.target.name]: e.target.value,
+    })
+  }
 
   const exportToPDF = () => {
-    alert('Função de exportação para PDF será implementada em breve!');
-  };
+    alert('Função de exportação para PDF será implementada em breve!')
+  }
 
   const exportToCSV = () => {
-    alert('Função de exportação para CSV será implementada em breve!');
-  };
+    alert('Função de exportação para CSV será implementada em breve!')
+  }
 
   // Cálculos gerais
-  const totalReceived = contracts.reduce((sum, c) => sum + (c.paid || 0), 0);
-  const totalReceivable = contracts.reduce((sum, c) => sum + (c.pending || 0), 0);
-  const totalContracts = contracts.length;
-  const activeContracts = contracts.filter(c => c.status === 'ativo').length;
-  const completedContracts = contracts.filter(c => c.status === 'concluido').length;
-  const overdueInstallments = installments.filter(i => {
-    const dueDate = new Date(i.dueDate);
-    return i.status === 'pendente' && dueDate < new Date();
-  }).length;
+  const totalReceived = contracts.reduce((sum, c) => sum + (c.paid || 0), 0)
+  const totalReceivable = contracts.reduce((sum, c) => sum + (c.pending || 0), 0)
+  const totalContracts = contracts.length
+  const activeContracts = contracts.filter((c) => c.status === 'ativo').length
+  const completedContracts = contracts.filter((c) => c.status === 'concluido').length
+  const overdueInstallments = installments.filter((i) => {
+    const dueDate = new Date(i.dueDate)
+    return i.status === 'pendente' && dueDate < new Date()
+  }).length
 
   // Relatório por cliente
-  const clientsReport = clients.map(client => {
-    const clientContracts = contracts.filter(c => c.clientId === client.id);
-    const totalValue = clientContracts.reduce((sum, c) => sum + c.value, 0);
-    const totalPaid = clientContracts.reduce((sum, c) => sum + (c.paid || 0), 0);
-    const totalPending = clientContracts.reduce((sum, c) => sum + (c.pending || 0), 0);
-    
-    return {
-      ...client,
-      contractsCount: clientContracts.length,
-      totalValue,
-      totalPaid,
-      totalPending,
-      paymentRate: totalValue > 0 ? (totalPaid / totalValue) * 100 : 0
-    };
-  }).sort((a, b) => b.totalValue - a.totalValue);
+  const clientsReport = clients
+    .map((client) => {
+      const clientContracts = contracts.filter((c) => c.clientId === client.id)
+      const totalValue = clientContracts.reduce((sum, c) => sum + c.value, 0)
+      const totalPaid = clientContracts.reduce((sum, c) => sum + (c.paid || 0), 0)
+      const totalPending = clientContracts.reduce((sum, c) => sum + (c.pending || 0), 0)
+
+      return {
+        ...client,
+        contractsCount: clientContracts.length,
+        totalValue,
+        totalPaid,
+        totalPending,
+        paymentRate: totalValue > 0 ? (totalPaid / totalValue) * 100 : 0,
+      }
+    })
+    .sort((a, b) => b.totalValue - a.totalValue)
 
   // Relatório de inadimplência
-  const defaultReport = installments.filter(i => {
-    const dueDate = new Date(i.dueDate);
-    return i.status === 'pendente' && dueDate < new Date();
-  }).map(inst => {
-    const contract = contracts.find(c => c.id === inst.contractId);
-    const daysLate = Math.floor((new Date() - new Date(inst.dueDate)) / (1000 * 60 * 60 * 24));
-    
-    return {
-      ...inst,
-      contract,
-      daysLate
-    };
-  }).sort((a, b) => b.daysLate - a.daysLate);
+  const defaultReport = installments
+    .filter((i) => {
+      const dueDate = new Date(i.dueDate)
+      return i.status === 'pendente' && dueDate < new Date()
+    })
+    .map((inst) => {
+      const contract = contracts.find((c) => c.id === inst.contractId)
+      const daysLate = Math.floor((new Date() - new Date(inst.dueDate)) / (1000 * 60 * 60 * 24))
+
+      return {
+        ...inst,
+        contract,
+        daysLate,
+      }
+    })
+    .sort((a, b) => b.daysLate - a.daysLate)
 
   // Receitas por mês
   const monthlyRevenue = transactions
-    .filter(t => t.type === 'entrada')
+    .filter((t) => t.type === 'entrada')
     .reduce((acc, t) => {
-      const month = new Date(t.date).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' });
-      acc[month] = (acc[month] || 0) + t.value;
-      return acc;
-    }, {});
+      const month = new Date(t.date).toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })
+      acc[month] = (acc[month] || 0) + t.value
+      return acc
+    }, {})
 
   if (loading) {
     return (
@@ -125,7 +156,7 @@ const Reports = () => {
           <p className="text-gray-600">Carregando relatórios...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -133,14 +164,14 @@ const Reports = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Relatórios</h1>
         <div className="flex gap-2">
-          <button 
+          <button
             onClick={exportToCSV}
             className="px-4 py-2 border border-surface-medium text-gray-200 rounded-lg hover:bg-surface-dark transition flex items-center gap-2"
           >
             <Download className="w-5 h-5" />
             Exportar CSV
           </button>
-          <button 
+          <button
             onClick={exportToPDF}
             className="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-700 transition flex items-center gap-2"
           >
@@ -156,8 +187,8 @@ const Reports = () => {
           <button
             onClick={() => setReportType('overview')}
             className={`p-4 rounded-lg border-2 transition ${
-              reportType === 'overview' 
-                ? 'border-dark-500 bg-dark-500/10' 
+              reportType === 'overview'
+                ? 'border-dark-500 bg-dark-500/10'
                 : 'border-surface-medium hover:border-surface-light'
             }`}
           >
@@ -168,8 +199,8 @@ const Reports = () => {
           <button
             onClick={() => setReportType('clients')}
             className={`p-4 rounded-lg border-2 transition ${
-              reportType === 'clients' 
-                ? 'border-dark-500 bg-dark-500/10' 
+              reportType === 'clients'
+                ? 'border-dark-500 bg-dark-500/10'
                 : 'border-surface-medium hover:border-surface-light'
             }`}
           >
@@ -180,8 +211,8 @@ const Reports = () => {
           <button
             onClick={() => setReportType('contracts')}
             className={`p-4 rounded-lg border-2 transition ${
-              reportType === 'contracts' 
-                ? 'border-dark-500 bg-dark-500/10' 
+              reportType === 'contracts'
+                ? 'border-dark-500 bg-dark-500/10'
                 : 'border-surface-medium hover:border-surface-light'
             }`}
           >
@@ -192,8 +223,8 @@ const Reports = () => {
           <button
             onClick={() => setReportType('default')}
             className={`p-4 rounded-lg border-2 transition ${
-              reportType === 'default' 
-                ? 'border-dark-500 bg-dark-500/10' 
+              reportType === 'default'
+                ? 'border-dark-500 bg-dark-500/10'
                 : 'border-surface-medium hover:border-surface-light'
             }`}
           >
@@ -235,8 +266,10 @@ const Reports = () => {
               className="bg-surface-light w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
             >
               <option value="all">Todos os clientes</option>
-              {clients.map(client => (
-                <option key={client.id} value={client.id}>{client.name}</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
               ))}
             </select>
           </div>
@@ -321,7 +354,8 @@ const Reports = () => {
                 </div>
                 <p className="text-sm font-medium text-white">Contratos Ativos</p>
                 <p className="text-xs text-gray-200 mt-1">
-                  {totalContracts > 0 ? Math.round((activeContracts / totalContracts) * 100) : 0}% do total
+                  {totalContracts > 0 ? Math.round((activeContracts / totalContracts) * 100) : 0}%
+                  do total
                 </p>
               </div>
 
@@ -331,7 +365,8 @@ const Reports = () => {
                 </div>
                 <p className="text-sm font-medium text-white">Contratos Concluídos</p>
                 <p className="text-xs text-gray-200 mt-1">
-                  {totalContracts > 0 ? Math.round((completedContracts / totalContracts) * 100) : 0}% do total
+                  {totalContracts > 0 ? Math.round((completedContracts / totalContracts) * 100) : 0}
+                  % do total
                 </p>
               </div>
 
@@ -351,22 +386,26 @@ const Reports = () => {
           <div className="bg-background-tertiary rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Receitas Mensais</h3>
             <div className="space-y-3">
-              {Object.entries(monthlyRevenue).slice(0, 6).map(([month, value]) => (
-                <div key={month} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 capitalize">{month}</span>
-                  <div className="flex items-center gap-3 flex-1 mx-4">
-                    <div className="flex-1 bg-surface-dark rounded-full h-2">
-                      <div 
-                        className="bg-green-250 h-2 rounded-full"
-                        style={{ 
-                          width: `${Math.min((value / Math.max(...Object.values(monthlyRevenue))) * 100, 100)}%` 
-                        }}
-                      />
+              {Object.entries(monthlyRevenue)
+                .slice(0, 6)
+                .map(([month, value]) => (
+                  <div key={month} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 capitalize">{month}</span>
+                    <div className="flex items-center gap-3 flex-1 mx-4">
+                      <div className="flex-1 bg-surface-dark rounded-full h-2">
+                        <div
+                          className="bg-green-250 h-2 rounded-full"
+                          style={{
+                            width: `${Math.min((value / Math.max(...Object.values(monthlyRevenue))) * 100, 100)}%`,
+                          }}
+                        />
+                      </div>
                     </div>
+                    <span className="text-sm font-semibold text-white">
+                      {formatCurrency(value)}
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-white">{formatCurrency(value)}</span>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>
@@ -381,16 +420,28 @@ const Reports = () => {
             <table className="w-full">
               <thead className="bg-surface-dark">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Cliente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Contratos</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Valor Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Pago</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Pendente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Taxa de Pagamento</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Contratos
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Valor Total
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Pago
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Pendente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Taxa de Pagamento
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-dark">
-                {clientsReport.map(client => (
+                {clientsReport.map((client) => (
                   <tr key={client.id} className="hover:bg-surface-dark">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -416,7 +467,7 @@ const Reports = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-surface-dark rounded-full h-2 max-w-[100px]">
-                          <div 
+                          <div
                             className="bg-green-250 h-2 rounded-full"
                             style={{ width: `${client.paymentRate}%` }}
                           />
@@ -443,19 +494,35 @@ const Reports = () => {
             <table className="w-full">
               <thead className="bg-surface-dark">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Cliente</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Descrição</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Tipo</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Valor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Pago</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Progresso</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Cliente
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Descrição
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Tipo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Valor
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Pago
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                    Progresso
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-dark">
-                {contracts.map(contract => (
+                {contracts.map((contract) => (
                   <tr key={contract.id} className="hover:bg-surface-dark">
-                    <td className="px-6 py-4 text-sm font-medium text-white">{contract.clientName}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-white">
+                      {contract.clientName}
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{contract.description}</td>
                     <td className="px-6 py-4 text-sm text-gray-600 capitalize">{contract.type}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-white">
@@ -465,18 +532,22 @@ const Reports = () => {
                       {formatCurrency(contract.paid || 0)}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        contract.status === 'ativo' ? 'bg-green-250 text-green-200' :
-                        contract.status === 'concluido' ? 'bg-dark-100 text-dark-800' :
-                        'bg-surface-medium text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                          contract.status === 'ativo'
+                            ? 'bg-green-250 text-green-200'
+                            : contract.status === 'concluido'
+                              ? 'bg-dark-100 text-dark-800'
+                              : 'bg-surface-medium text-gray-800'
+                        }`}
+                      >
                         {contract.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-surface-dark rounded-full h-2 max-w-[100px]">
-                          <div 
+                          <div
                             className="bg-green-250 h-2 rounded-full"
                             style={{ width: `${((contract.paid || 0) / contract.value) * 100}%` }}
                           />
@@ -515,16 +586,28 @@ const Reports = () => {
               <table className="w-full">
                 <thead className="bg-surface-dark">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Cliente</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Contrato</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Parcela</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Valor</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Vencimento</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">Dias em Atraso</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                      Contrato
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                      Parcela
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                      Valor
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                      Vencimento
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase">
+                      Dias em Atraso
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-dark">
-                  {defaultReport.map(item => (
+                  {defaultReport.map((item) => (
                     <tr key={item.id} className="hover:bg-surface-dark">
                       <td className="px-6 py-4 text-sm font-medium text-white">
                         {item.contract?.clientName || 'Cliente'}
@@ -536,13 +619,19 @@ const Reports = () => {
                       <td className="px-6 py-4 text-sm font-semibold text-white">
                         {formatCurrency(item.value)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{formatDate(item.dueDate)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {formatDate(item.dueDate)}
+                      </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          item.daysLate > 30 ? 'bg-red-250 text-red-400' :
-                          item.daysLate > 15 ? 'bg-orange-100 text-orange-800' :
-                          'bg-yellow-250 text-yellow-200'
-                        }`}>
+                        <span
+                          className={`px-3 py-1 text-xs font-medium rounded-full ${
+                            item.daysLate > 30
+                              ? 'bg-red-250 text-red-400'
+                              : item.daysLate > 15
+                                ? 'bg-orange-100 text-orange-800'
+                                : 'bg-yellow-250 text-yellow-200'
+                          }`}
+                        >
                           {item.daysLate} dias
                         </span>
                       </td>
@@ -555,7 +644,7 @@ const Reports = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Reports;
+export default Reports
