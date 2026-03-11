@@ -25,7 +25,6 @@ export const authService = {
         uid: user.uid,
         email: user.email,
         name: userData.name,
-        role: userData.role || 'assistente', // advogado, assistente, financeiro
         phone: userData.phone || '',
         active: true,
         createdAt: Timestamp.now(),

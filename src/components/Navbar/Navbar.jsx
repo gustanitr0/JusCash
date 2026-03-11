@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Bell, Settings, LogOut, Menu } from 'lucide-react'
 import { useAuth } from '../../contexts/auth'
+import JusCashLogo from '../../assets/JusCashLogo.png'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
@@ -17,8 +18,8 @@ const Navbar = () => {
       <div className="flex items-center justify-between">
         {/* Logo (visivel apenas em desktop quando sidebar esta visivel) */}
         <div className="hidden lg:flex items-center gap-3">
-          <div className="bg-gradient-purple text-dark-100 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xl shadow-lg glow-purple">
-            J
+          <div className="w-14 h-14 rounded-lg flex items-center justify-center shadow-lg glow-purple overflow-hidden">
+            <img src={JusCashLogo} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white-900">JusCash</h1>
