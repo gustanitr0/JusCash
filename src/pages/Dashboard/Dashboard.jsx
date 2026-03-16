@@ -221,9 +221,9 @@ const Dashboard = () => {
                         className={`p-2 rounded ${trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'}`}
                       >
                         {trans.type === 'entrada' ? (
-                          <TrendingUp className="w-4 h-4 text-green-400" />
+                          <TrendingUp className="w-4 h-4 text-white" />
                         ) : (
-                          <TrendingDown className="w-4 h-4 text-red-400" />
+                          <TrendingDown className="w-4 h-4 text-white" />
                         )}
                       </div>
                       <div>

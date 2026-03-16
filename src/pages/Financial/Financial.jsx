@@ -223,9 +223,9 @@ const Financial = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      pago: 'bg-green-500 text-green-400',
-      pendente: 'bg-yellow-500 text-yellow-400',
-      vencido: 'bg-red-500 text-red-400',
+      pago: 'bg-green-500 text-white',
+      pendente: 'bg-yellow-500 text-white',
+      vencido: 'bg-red-500 text-white0',
     }
     return colors[status] || 'bg-surface-medium text-gray-800'
   }
@@ -352,7 +352,7 @@ const Financial = () => {
                     key={inst.id}
                     className={`p-4 rounded-lg border-l-4 ${
                       inst.isOverdue
-                        ? 'bg-red-50 border-red-500'
+                        ? 'bg-surface-dark border-red-500'
                         : 'bg-surface-dark border-surface-medium'
                     }`}
                   >
@@ -428,9 +428,9 @@ const Financial = () => {
                         }`}
                       >
                         {trans.type === 'entrada' ? (
-                          <TrendingUp className="w-4 h-4 text-green-600" />
+                          <TrendingUp className="w-4 h-4 text-white" />
                         ) : (
-                          <TrendingDown className="w-4 h-4 text-red-600" />
+                          <TrendingDown className="w-4 h-4 text-white" />
                         )}
                       </div>
                       <div className="flex-1">
@@ -493,8 +493,8 @@ const Financial = () => {
                     <span
                       className={`px-3 py-1 text-xs font-medium rounded-full ${
                         trans.type === 'entrada'
-                          ? 'bg-green-500 text-green-400'
-                          : 'bg-red-500 text-red-400'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-red-500 text-white'
                       }`}
                     >
                       {trans.type === 'entrada' ? 'Entrada' : 'Saída'}
@@ -565,7 +565,7 @@ const Financial = () => {
                   value={formData.description}
                   onChange={handleTransactionChange}
                   placeholder="Ex: Pagamento de honorários, Despesas cartório..."
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
               </div>
@@ -580,7 +580,7 @@ const Financial = () => {
                   placeholder="0.00"
                   step="0.01"
                   min="0"
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
               </div>
@@ -592,7 +592,7 @@ const Financial = () => {
                   name="date"
                   value={formData.date}
                   onChange={handleTransactionChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
               </div>
@@ -603,7 +603,7 @@ const Financial = () => {
                   name="category"
                   value={formData.category}
                   onChange={handleTransactionChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 >
                   <option value="honorario">Honorário</option>
@@ -621,7 +621,7 @@ const Financial = () => {
                   name="paymentMethod"
                   value={formData.paymentMethod}
                   onChange={handleTransactionChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 >
                   <option value="pix">PIX</option>
@@ -659,8 +659,8 @@ const Financial = () => {
         <Modal title="Registrar Pagamento" onClose={handleCloseModal}>
           <form onSubmit={handleSubmitPayment} className="space-y-4">
             <div className="bg-dark-500/10 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-dark-800 font-medium mb-2">Informações da Parcela</p>
-              <div className="space-y-1 text-sm text-dark-700">
+              <p className="text-sm text-white font-medium mb-2">Informações da Parcela</p>
+              <div className="space-y-1 text-sm text-dark-200">
                 <p>
                   <span className="font-medium">Cliente:</span>{' '}
                   {selectedInstallment.contract?.clientName}
@@ -692,7 +692,7 @@ const Financial = () => {
                   placeholder="0.00"
                   step="0.01"
                   min="0"
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
               </div>
@@ -706,7 +706,7 @@ const Financial = () => {
                   name="paidDate"
                   value={paymentData.paidDate}
                   onChange={handlePaymentChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
               </div>
@@ -719,7 +719,7 @@ const Financial = () => {
                   name="paymentMethod"
                   value={paymentData.paymentMethod}
                   onChange={handlePaymentChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 >
                   <option value="pix">PIX</option>
@@ -738,7 +738,7 @@ const Financial = () => {
                   onChange={handlePaymentChange}
                   rows="3"
                   placeholder="Informações adicionais sobre o pagamento..."
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent resize-none"
+                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                 />
               </div>
             </div>

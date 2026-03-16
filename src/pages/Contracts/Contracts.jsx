@@ -348,9 +348,9 @@ const Contracts = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      ativo: 'bg-green-500 text-green-400',
-      concluido: 'bg-dark-500 text-dark-400',
-      cancelado: 'bg-red-500 text-red-400',
+      ativo: 'bg-green-500 text-white',
+      concluido: 'bg-dark-500 text-white',
+      cancelado: 'bg-red-500 text-white',
     }
     return colors[status] || 'bg-surface-medium text-gray-800'
   }
