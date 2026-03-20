@@ -297,52 +297,69 @@ const Financial = () => {
       </div>
 
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingUp className="w-8 h-8" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* ENTRADAS */}
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-4 sm:p-6 text-white min-w-0">
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />
             <span className="text-sm font-medium opacity-90">Total de Entradas</span>
           </div>
-          <p className="text-3xl font-bold">{formatCurrency(totalEntradas)}</p>
-          <p className="text-sm opacity-75 mt-2">
+
+          <p className="text-2xl sm:text-3xl font-bold break-words">
+            {formatCurrency(totalEntradas)}
+          </p>
+
+          <p className="text-xs sm:text-sm opacity-75 mt-2">
             {transactions.filter((t) => t.type === 'entrada').length} transações
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-6 text-white">
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingDown className="w-8 h-8" />
+        {/* SAÍDAS */}
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-4 sm:p-6 text-white min-w-0">
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8" />
             <span className="text-sm font-medium opacity-90">Total de Saídas</span>
           </div>
-          <p className="text-3xl font-bold">{formatCurrency(totalSaidas)}</p>
-          <p className="text-sm opacity-75 mt-2">
+
+          <p className="text-2xl sm:text-3xl font-bold break-words">
+            {formatCurrency(totalSaidas)}
+          </p>
+
+          <p className="text-xs sm:text-sm opacity-75 mt-2">
             {transactions.filter((t) => t.type === 'saida').length} transações
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-dark-600 to-dark-500 rounded-lg shadow-lg p-6 text-white">
-          <div className="flex items-center gap-3 mb-4">
-            <DollarSign className="w-8 h-8" />
+        {/* SALDO */}
+        <div className="bg-gradient-to-br from-dark-600 to-dark-500 rounded-lg shadow-lg p-4 sm:p-6 text-white min-w-0">
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />
             <span className="text-sm font-medium opacity-90">Saldo em Caixa</span>
           </div>
-          <p className="text-3xl font-bold">{formatCurrency(saldoAtual)}</p>
-          <p className="text-sm opacity-75 mt-2">Atualizado agora</p>
+
+          <p className="text-2xl sm:text-3xl font-bold break-words">{formatCurrency(saldoAtual)}</p>
+
+          <p className="text-xs sm:text-sm opacity-75 mt-2">Atualizado agora</p>
         </div>
       </div>
 
       {/* Parcelas Pendentes e Histórico */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Parcelas Pendentes */}
-        <div className="bg-background-tertiary rounded-lg shadow">
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Parcelas Pendentes</h2>
-              <span className="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+        <div className="bg-background-tertiary rounded-lg shadow overflow-hidden">
+          {/* HEADER */}
+          <div className="p-4 sm:p-6 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h2 className="text-base sm:text-lg font-semibold text-white">Parcelas Pendentes</h2>
+
+              <span className="self-start sm:self-auto px-3 py-1 bg-orange-100 text-orange-800 text-xs sm:text-sm font-medium rounded-full">
                 {pendingInstallments.length}
               </span>
             </div>
           </div>
-          <div className="p-6 max-h-96 overflow-y-auto">
+
+          {/* LISTA */}
+          <div className="p-4 sm:p-6 max-h-96 overflow-y-auto">
             {pendingInstallments.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Nenhuma parcela pendente</p>
             ) : (
@@ -350,21 +367,23 @@ const Financial = () => {
                 {pendingInstallments.map((inst) => (
                   <div
                     key={inst.id}
-                    className={`p-4 rounded-lg border-l-4 ${
+                    className={`p-3 sm:p-4 rounded-lg border-l-4 min-w-0 ${
                       inst.isOverdue
                         ? 'bg-surface-dark border-red-500'
                         : 'bg-surface-dark border-surface-medium'
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="font-medium text-white">
+                    {/* TOP */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-white truncate">
                           {inst.contract?.clientName || 'Cliente'}
                         </p>
                         <p className="text-sm text-gray-300">Parcela {inst.number}</p>
                       </div>
+
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${getStatusColor(
+                        className={`self-start px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${getStatusColor(
                           inst.status
                         )}`}
                       >
@@ -372,16 +391,21 @@ const Financial = () => {
                         {inst.isOverdue ? 'Vencida' : 'Pendente'}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-3">
+
+                    {/* BOTTOM */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-3">
                       <div>
-                        <p className="text-lg font-bold text-white">{formatCurrency(inst.value)}</p>
+                        <p className="text-lg font-bold text-white break-words">
+                          {formatCurrency(inst.value)}
+                        </p>
                         <p className="text-xs text-gray-500">
                           Vencimento: {formatDate(inst.dueDate)}
                         </p>
                       </div>
+
                       <button
                         onClick={() => handleOpenPaymentModal(inst)}
-                        className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
+                        className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
                       >
                         Dar Baixa
                       </button>
@@ -394,15 +418,19 @@ const Financial = () => {
         </div>
 
         {/* Histórico de Transações */}
-        <div className="bg-background-tertiary rounded-lg shadow">
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Histórico de Transações</h2>
-              <div className="flex gap-2">
+        <div className="bg-background-tertiary rounded-lg shadow overflow-hidden">
+          {/* HEADER */}
+          <div className="p-4 sm:p-6 border-b">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 className="text-base sm:text-lg font-semibold text-white">
+                Histórico de Transações
+              </h2>
+
+              <div className="w-full sm:w-auto">
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="bg-background-primary px-3 py-1 text-sm border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
+                  className="w-full sm:w-auto bg-background-primary px-3 py-2 text-sm border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent"
                 >
                   <option value="all">Todas</option>
                   <option value="entrada">Entradas</option>
@@ -411,7 +439,9 @@ const Financial = () => {
               </div>
             </div>
           </div>
-          <div className="p-6 max-h-96 overflow-y-auto">
+
+          {/* LISTA */}
+          <div className="p-4 sm:p-6 max-h-96 overflow-y-auto">
             {filteredTransactions.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Nenhuma transação registrada</p>
             ) : (
@@ -419,35 +449,44 @@ const Financial = () => {
                 {filteredTransactions.map((trans) => (
                   <div
                     key={trans.id}
-                    className="flex items-center justify-between p-3 bg-surface-dark rounded-lg hover:bg-surface-medium transition"
+                    className="p-3 bg-surface-dark rounded-lg hover:bg-surface-medium transition min-w-0"
                   >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div
-                        className={`p-2 rounded ${
-                          trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'
+                    {/* CONTEÚDO */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      {/* ESQUERDA */}
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div
+                          className={`p-2 rounded flex-shrink-0 ${
+                            trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'
+                          }`}
+                        >
+                          {trans.type === 'entrada' ? (
+                            <TrendingUp className="w-4 h-4 text-white" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4 text-white" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white truncate">
+                            {trans.description}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(trans.date)} • {trans.category}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* VALOR */}
+                      <span
+                        className={`text-sm sm:text-base font-semibold self-start sm:self-auto ${
+                          trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {trans.type === 'entrada' ? (
-                          <TrendingUp className="w-4 h-4 text-white" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-white" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-white">{trans.description}</p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(trans.date)} • {trans.category}
-                        </p>
-                      </div>
+                        {trans.type === 'entrada' ? '+' : '-'}
+                        {formatCurrency(trans.value)}
+                      </span>
                     </div>
-                    <span
-                      className={`font-semibold ${
-                        trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
-                      }`}
-                    >
-                      {trans.type === 'entrada' ? '+' : '-'}
-                      {formatCurrency(trans.value)}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -457,41 +496,56 @@ const Financial = () => {
       </div>
 
       {/* Tabela Detalhada */}
-      <div className="bg-background-tertiary rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold text-white">Todas as Transações</h2>
+      <div className="bg-background-tertiary rounded-lg shadow overflow-hidden">
+        {/* HEADER */}
+        <div className="p-4 sm:p-6 border-b">
+          <h2 className="text-base sm:text-lg font-semibold text-white">Todas as Transações</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+
+        {/* TABELA */}
+        <div className="overflow-x-auto max-w-full">
+          <table className="min-w-[700px]">
+            {/* HEAD */}
             <thead className="bg-surface-dark">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Data
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Tipo
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Descrição
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+
+                {/* esconder no mobile */}
+                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Categoria
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+
+                <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Método
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   Valor
                 </th>
               </tr>
             </thead>
+
+            {/* BODY */}
             <tbody className="divide-y divide-surface-dark">
               {filteredTransactions.map((trans) => (
                 <tr key={trans.id} className="hover:bg-surface-dark">
-                  <td className="px-6 py-4 text-sm text-white">{formatDate(trans.date)}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-white whitespace-nowrap">
+                    {formatDate(trans.date)}
+                  </td>
+
+                  <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <span
-                      className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full ${
                         trans.type === 'entrada'
                           ? 'bg-green-500 text-white'
                           : 'bg-red-500 text-white'
@@ -500,12 +554,20 @@ const Financial = () => {
                       {trans.type === 'entrada' ? 'Entrada' : 'Saída'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-white">{trans.description}</td>
-                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">{trans.category}</td>
-                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">
+
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-white max-w-[200px] truncate">
+                    {trans.description}
+                  </td>
+
+                  <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-300 capitalize">
+                    {trans.category}
+                  </td>
+
+                  <td className="hidden lg:table-cell px-6 py-4 text-sm text-gray-300 capitalize">
                     {trans.paymentMethod}
                   </td>
-                  <td className="px-6 py-4 text-sm text-right">
+
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right whitespace-nowrap">
                     <span
                       className={`font-semibold ${
                         trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
