@@ -161,19 +161,19 @@ const Reports = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-white">Relatórios</h1>
-        <div className="flex gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <button
             onClick={exportToCSV}
-            className="px-4 py-2 border border-surface-medium text-gray-200 rounded-lg hover:bg-surface-dark transition flex items-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-surface-medium px-4 py-2 text-gray-200 transition hover:bg-surface-dark sm:w-auto"
           >
             <Download className="w-5 h-5" />
             Exportar CSV
           </button>
           <button
             onClick={exportToPDF}
-            className="px-4 py-2 bg-dark-600 text-white rounded-lg hover:bg-dark-700 transition flex items-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-dark-600 px-4 py-2 text-white transition hover:bg-dark-700 sm:w-auto"
           >
             <Download className="w-5 h-5" />
             Exportar PDF

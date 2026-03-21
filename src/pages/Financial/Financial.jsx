@@ -502,9 +502,61 @@ const Financial = () => {
           <h2 className="text-base sm:text-lg font-semibold text-white">Todas as Transações</h2>
         </div>
 
+        {/* Mobile Cards */}
+        <div className="space-y-3 p-4 md:hidden">
+          {filteredTransactions.length === 0 ? (
+            <p className="py-8 text-center text-gray-500">Nenhuma transaÃ§Ã£o registrada</p>
+          ) : (
+            filteredTransactions.map((trans) => (
+              <div key={trans.id} className="space-y-3 rounded-lg bg-surface-dark p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-medium text-white">
+                      {trans.description}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">{formatDate(trans.date)}</p>
+                  </div>
+
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
+                      trans.type === 'entrada' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    }`}
+                  >
+                    {trans.type === 'entrada' ? 'Entrada' : 'SaÃ­da'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase text-gray-500">Categoria</p>
+                    <p className="break-words capitalize text-gray-300">{trans.category}</p>
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase text-gray-500">MÃ©todo</p>
+                    <p className="break-words capitalize text-gray-300">{trans.paymentMethod}</p>
+                  </div>
+                </div>
+
+                <div className="border-t border-surface-medium pt-3">
+                  <p className="text-xs uppercase text-gray-500">Valor</p>
+                  <p
+                    className={`text-base font-semibold ${
+                      trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {trans.type === 'entrada' ? '+' : '-'}
+                    {formatCurrency(trans.value)}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {/* TABELA */}
-        <div className="overflow-x-auto max-w-full">
-          <table className="min-w-[700px]">
+        <div className="hidden max-w-full overflow-x-auto md:block">
+          <table className="w-full min-w-[700px]">
             {/* HEAD */}
             <thead className="bg-surface-dark">
               <tr>
@@ -520,8 +572,7 @@ const Financial = () => {
                   Descrição
                 </th>
 
-                {/* esconder no mobile */}
-                <th className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Categoria
                 </th>
 
@@ -559,7 +610,7 @@ const Financial = () => {
                     {trans.description}
                   </td>
 
-                  <td className="hidden md:table-cell px-6 py-4 text-sm text-gray-300 capitalize">
+                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">
                     {trans.category}
                   </td>
 
