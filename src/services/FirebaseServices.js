@@ -12,6 +12,10 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '../firebase/config.ts'
+import { clientSchema } from '../schemas/clientSchema.js'
+import { contractSchema } from '../schemas/contractSchema.js'
+import { installmentSchema } from '../schemas/InstallmentSchema.js'
+import { transactionSchema } from '../schemas/transactionSchema.js'
 
 // Helper para obter caminho da subcoleção
 const getUserCollection = (userId, collectionName) => {
@@ -21,12 +25,14 @@ const getUserCollection = (userId, collectionName) => {
 // ==================== CLIENTES ====================
 export const clientsService = {
   async add(userId, clientData) {
+    const validatedData = clientSchema.parse(clientData)
+
     const docRef = await addDoc(getUserCollection(userId, 'clients'), {
-      ...clientData,
+      ...validatedData,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     })
-    return { id: docRef.id, ...clientData }
+    return { id: docRef.id, ...validatedData }
   },
 
   async getAll(userId) {
@@ -55,12 +61,14 @@ export const clientsService = {
 // ==================== CONTRATOS ====================
 export const contractsService = {
   async add(userId, contractData) {
+    const validatedData = contractSchema.parse(contractData)
+
     const docRef = await addDoc(getUserCollection(userId, 'contracts'), {
-      ...contractData,
+      ...validatedData,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     })
-    return { id: docRef.id, ...contractData }
+    return { id: docRef.id, ...validatedData }
   },
 
   async getAll(userId) {
@@ -89,12 +97,14 @@ export const contractsService = {
 // ==================== PARCELAS ====================
 export const installmentsService = {
   async add(userId, installmentData) {
+    const validatedData = installmentSchema.parse(installmentData)
+
     const docRef = await addDoc(getUserCollection(userId, 'installments'), {
-      ...installmentData,
+      ...validatedData,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     })
-    return { id: docRef.id, ...installmentData }
+    return { id: docRef.id, ...validatedData }
   },
 
   async getAll(userId) {
@@ -138,11 +148,13 @@ export const installmentsService = {
 // ==================== TRANSAÇÕES ====================
 export const transactionsService = {
   async add(userId, transactionData) {
+    const validatedData = transactionSchema.parse(transactionData)
+
     const docRef = await addDoc(getUserCollection(userId, 'transactions'), {
-      ...transactionData,
+      ...validatedData,
       createdAt: Timestamp.now(),
     })
-    return { id: docRef.id, ...transactionData }
+    return { id: docRef.id, ...validatedData }
   },
 
   async getAll(userId) {
