@@ -10,6 +10,7 @@ import {
   FileText,
   AlertCircle,
   CheckCircle,
+  MapPin,
 } from 'lucide-react'
 import { clientsService } from '../../services/FirebaseServices'
 import { useAuth } from '../../contexts/auth'
@@ -190,7 +191,7 @@ const Clients = () => {
         <h1 className="text-2xl font-bold text-white">Clientes</h1>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-dark-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
+          className="bg-dark-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-dark-700 transition"
         >
           <Plus className="w-5 h-5" />
           Novo Cliente
@@ -230,85 +231,158 @@ const Clients = () => {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-dark">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contato
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tipo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cadastrado em
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-background-tertiary divide-y divide-surface-dark">
-                {filteredClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-surface-dark">
-                    <td className="px-6 py-4">
+          <div className="space-y-6">
+            <div className="grid gap-4 md:hidden">
+              {filteredClients.map((client) => (
+                <div
+                  key={client.id}
+                  className="bg-background-tertiary rounded-lg shadow-lg border border-surface-dark overflow-hidden"
+                >
+                  {/* HEADER */}
+                  <div className="bg-gradient-to-r from-dark-600/20 to-dark-500/20 p-4 border-b border-surface-dark">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-dark-600 to-dark-500 rounded-full flex items-center justify-center text-white font-semibold">
                           {client.name.charAt(0).toUpperCase()}
                         </div>
+
                         <div>
-                          <div className="font-medium text-white">{client.name}</div>
-                          <div className="text-sm text-gray-500">{client.address}</div>
+                          <h3 className="font-semibold text-white">{client.name}</h3>
+                          <p className="text-xs text-gray-400">{client.cpfCnpj}</p>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 text-sm text-white">
-                          <Mail className="w-4 h-4 text-gray-500" />
-                          {client.email}
-                        </div>
-                        {client.phone && (
-                          <div className="flex items-center gap-2 text-sm text-gray-300">
-                            <Phone className="w-4 h-4 text-gray-500" />
-                            {client.phone}
-                          </div>
-                        )}
+                    </div>
+                  </div>
+
+                  {/* BODY */}
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      {client.email}
+                    </div>
+
+                    {client.phone && (
+                      <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <Phone className="w-4 h-4 text-gray-500" />
+                        {client.phone}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-white font-mono">{client.cpfCnpj}</td>
-                    <td className="px-6 py-4 text-sm text-gray-300">
-                      {client.city && client.state ? `${client.city}, ${client.state}` : '-'}
-                    </td>
-                    {/*<td className='px-6 py-4 text-sm text-white- font-mono'>{client.createdAt}</td> */}
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleOpenModal(client)}
-                          className="text-dark-400 hover:text-blue-400 p-2 hover:bg-dark-500 rounded transition"
-                          title="Editar"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(client.id)}
-                          className="text-red-600 hover:text-red-400 p-2 hover:bg-red-250 rounded transition"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                    )}
+
+                    {client.city && client.state && (
+                      <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        {client.city}, {client.state}
                       </div>
-                    </td>
+                    )}
+
+                    {client.address && (
+                      <div className="text-xs text-gray-500 border-t border-surface-dark pt-2">
+                        {client.address}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* FOOTER */}
+                  <div className="p-3 bg-surface-dark/50 border-t border-surface-dark">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleOpenModal(client)}
+                        className="flex items-center justify-center gap-2 px-3 py-2 text-sm border border-surface-medium rounded-lg text-gray-300 hover:bg-surface-medium transition"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Editar
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(client.id)}
+                        className="flex items-center justify-center gap-2 px-3 py-2 text-sm border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+                <thead className="bg-surface-dark">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cliente
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contato
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Local
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-background-tertiary divide-y divide-surface-dark">
+                  {filteredClients.map((client) => (
+                    <tr key={client.id} className="hover:bg-surface-dark">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-dark-600 to-dark-500 rounded-full flex items-center justify-center text-white font-semibold">
+                            {client.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-medium text-white">{client.name}</div>
+                            <div className="text-sm text-gray-500">{client.address}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2 text-sm text-white">
+                            <Mail className="w-4 h-4 text-gray-500" />
+                            {client.email}
+                          </div>
+                          {client.phone && (
+                            <div className="flex items-center gap-2 text-sm text-gray-300">
+                              <Phone className="w-4 h-4 text-gray-500" />
+                              {client.phone}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-white font-mono">{client.cpfCnpj}</td>
+                      <td className="px-6 py-4 text-sm text-gray-300">
+                        {client.city && client.state ? `${client.city}, ${client.state}` : '-'}
+                      </td>
+                      {/*<td className='px-6 py-4 text-sm text-white- font-mono'>{client.createdAt}</td> */}
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleOpenModal(client)}
+                            className="text-dark-400 hover:text-blue-400 p-2 hover:bg-dark-500 rounded transition"
+                            title="Editar"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(client.id)}
+                            className="text-red-600 hover:text-red-400 p-2 hover:bg-red-250 rounded transition"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

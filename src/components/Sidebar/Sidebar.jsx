@@ -147,7 +147,7 @@ const Sidebar = ({ currentView, setCurrentView }) => {
             <div className="mt-8 pt-6 border-t border-surface-dark">
               <div className="bg-surface-dark/50 rounded-lg p-4">
                 <p className="text-xs text-gray-500 mb-1">Versão</p>
-                <p className="text-sm font-semibold text-gray-300">1.0.0</p>
+                <p className="text-sm font-semibold text-gray-300">0.1.2</p>
               </div>
             </div>
           )}
