@@ -11,6 +11,7 @@ import {
   CheckCircle,
 } from 'lucide-react'
 import { useAuth } from '../../../contexts/auth'
+import JusCashLogo from '../../../assets/JusCashLogo.png'
 
 const Register = ({ onSwitchToLogin }) => {
   const { register, error } = useAuth()
@@ -92,8 +93,12 @@ const Register = ({ onSwitchToLogin }) => {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-dark-600 text-white rounded-2xl mb-4">
-            <span className="text-3xl font-bold">J</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-dark-600 text-white rounded-2xl mb-4">
+            <img
+              src={JusCashLogo}
+              alt="Logo"
+              className="w-full h-full object-contain rounded-2xl"
+            />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">JusCash</h1>
           <p className="text-gray-300">Crie sua conta gratuitamente</p>
@@ -133,7 +138,7 @@ const Register = ({ onSwitchToLogin }) => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Seu nome"
-                  className="w-full pl-10 pr-4 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition"
+                  className="w-full pl-10 pr-4 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition text-gray-500"
                   disabled={loading}
                 />
               </div>
@@ -167,7 +172,7 @@ const Register = ({ onSwitchToLogin }) => {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="(11) 98765-4321"
-                  className="w-full pl-10 pr-4 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition"
+                  className="w-full pl-10 pr-4 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition text-gray-500"
                   disabled={loading}
                 />
               </div>
@@ -184,7 +189,7 @@ const Register = ({ onSwitchToLogin }) => {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Mínimo 6 caracteres"
-                  className="w-full pl-10 pr-12 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition"
+                  className="w-full pl-10 pr-12 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition text-gray-500"
                   disabled={loading}
                 />
                 <button
@@ -210,7 +215,7 @@ const Register = ({ onSwitchToLogin }) => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="Digite a senha novamente"
-                  className="w-full pl-10 pr-12 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition"
+                  className="w-full pl-10 pr-12 py-3 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent transition text-gray-500"
                   disabled={loading}
                 />
                 <button
