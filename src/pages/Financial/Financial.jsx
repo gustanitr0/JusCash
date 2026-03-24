@@ -159,7 +159,12 @@ const Financial = () => {
       const paidValue = parseFloat(paymentData.paidValue)
 
       // Atualizar parcela
-      await installmentsService.markAsPaid(selectedInstallment.id, paidValue, paymentData.paidDate)
+      await installmentsService.markAsPaid(
+        user.uid,
+        selectedInstallment.id,
+        paidValue,
+        paymentData.paidDate
+      )
 
       // Registrar transação
       const contract = contracts.find((c) => c.id === selectedInstallment.contractId)
@@ -201,7 +206,7 @@ const Financial = () => {
     if (!window.confirm('Deseja realmente excluir esta transação?')) return
 
     try {
-      await transactionsService.delete(id)
+      await transactionsService.delete(user.uid, id)
       alert('Transação excluída com sucesso!')
       loadData()
     } catch (error) {
@@ -522,7 +527,7 @@ const Financial = () => {
                       trans.type === 'entrada' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
                     }`}
                   >
-                    {trans.type === 'entrada' ? 'Entrada' : 'SaÃ­da'}
+                    {trans.type === 'entrada' ? 'Entrada' : 'Saí­da'}
                   </span>
                 </div>
 
@@ -610,9 +615,7 @@ const Financial = () => {
                     {trans.description}
                   </td>
 
-                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">
-                    {trans.category}
-                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">{trans.category}</td>
 
                   <td className="hidden lg:table-cell px-6 py-4 text-sm text-gray-300 capitalize">
                     {trans.paymentMethod}
