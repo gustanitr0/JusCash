@@ -18,6 +18,10 @@ import {
 import { useAuth } from '../../contexts/auth'
 import Modal from '../../components/Modal/Modal'
 import LoanSimulator from '../../components/LoanSimulator'
+import {
+  getInstallmentCurrentValue,
+  getPendingInstallmentsTotal,
+} from '../../utils/installmentCalculations'
 
 const Contracts = () => {
   const { user } = useAuth()
@@ -346,6 +350,15 @@ const Contracts = () => {
     }).format(value)
   }
 
+  const getContractInstallments = (contractId) =>
+    installments.filter((installment) => installment.contractId === contractId)
+
+  const getContractPendingAmount = (contractId) =>
+    getPendingInstallmentsTotal(getContractInstallments(contractId))
+
+  const getContractCurrentTotal = (contract) =>
+    Number(((contract.paid || 0) + getContractPendingAmount(contract.id)).toFixed(2))
+
   const getStatusColor = (status) => {
     const colors = {
       ativo: 'bg-green-500 text-white',
@@ -396,10 +409,11 @@ const Contracts = () => {
     try {
       const amount = parseFloat(paymentAmount)
       const contract = selectedContractForAction
+      const currentPending = getContractPendingAmount(contract.id)
 
       // Atualizar valores do contrato
       const newPaid = (contract.paid || 0) + amount
-      const newPending = contract.totalReceivable - newPaid
+      const newPending = Math.max(0, Number((currentPending - amount).toFixed(2)))
 
       await contractsService.update(user.uid, contract.id, {
         ...contract,
@@ -471,12 +485,14 @@ const Contracts = () => {
           {contracts.map((contract) => {
             // Calcular informações adicionais
             const profit = contract.totalInterest || 0
-            const paidInstallments = installments.filter(
-              (i) => i.contractId === contract.id && i.status === 'pago'
-            ).length
+            const contractInstallments = getContractInstallments(contract.id)
+            const paidInstallments = contractInstallments.filter((i) => i.status === 'pago').length
             const totalInstallments = contract.installments || 0
-            const nextDueDate = installments
-              .filter((i) => i.contractId === contract.id && i.status === 'pendente')
+            const currentPending = getContractPendingAmount(contract.id)
+            const currentTotalReceivable = getContractCurrentTotal(contract)
+            const progressBase = currentTotalReceivable > 0 ? currentTotalReceivable : contract.value || 1
+            const nextDueDate = contractInstallments
+              .filter((i) => i.status === 'pendente')
               .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]?.dueDate
 
             return (
@@ -541,7 +557,7 @@ const Contracts = () => {
                         </span>
                       </div>
                       <p className="text-lg font-bold text-green-400">
-                        {formatCurrency(contract.totalReceivable || contract.value)}
+                        {formatCurrency(currentTotalReceivable)}
                       </p>
                     </div>
 
@@ -604,7 +620,7 @@ const Contracts = () => {
                     <div className="text-right">
                       <span className="text-xs text-gray-500">Pendente</span>
                       <p className="text-base font-bold text-orange-400 mt-1">
-                        {formatCurrency(contract.pending || contract.totalReceivable)}
+                        {formatCurrency(currentPending)}
                       </p>
                     </div>
                   </div>
@@ -614,10 +630,7 @@ const Contracts = () => {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-400">Progresso Geral</span>
                       <span className="text-xs font-bold text-white">
-                        {Math.round(
-                          ((contract.paid || 0) / (contract.totalReceivable || contract.value)) *
-                            100
-                        )}
+                        {Math.round(((contract.paid || 0) / progressBase) * 100)}
                         %
                       </span>
                     </div>
@@ -625,7 +638,7 @@ const Contracts = () => {
                       <div
                         className="bg-gradient-to-r from-green-500 to-green-400 h-3 rounded-full transition-all shadow-lg"
                         style={{
-                          width: `${((contract.paid || 0) / (contract.totalReceivable || contract.value)) * 100}%`,
+                          width: `${((contract.paid || 0) / progressBase) * 100}%`,
                         }}
                       />
                     </div>
@@ -1072,13 +1085,21 @@ const Contracts = () => {
                 <div>
                   <p className="text-xs text-gray-500">Total a Receber</p>
                   <p className="text-base font-bold text-green-400">
-                    {formatCurrency(selectedContractForAction?.totalReceivable || 0)}
+                    {formatCurrency(
+                      selectedContractForAction
+                        ? getContractCurrentTotal(selectedContractForAction)
+                        : 0
+                    )}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Pendente</p>
                   <p className="text-base font-bold text-orange-400">
-                    {formatCurrency(selectedContractForAction?.pending || 0)}
+                    {formatCurrency(
+                      selectedContractForAction
+                        ? getContractPendingAmount(selectedContractForAction.id)
+                        : 0
+                    )}
                   </p>
                 </div>
               </div>
@@ -1095,12 +1116,21 @@ const Contracts = () => {
                 placeholder="0.00"
                 step="0.01"
                 min="0"
-                max={selectedContractForAction?.pending || 0}
+                max={
+                  selectedContractForAction
+                    ? getContractPendingAmount(selectedContractForAction.id)
+                    : 0
+                }
                 className="input-dark w-full"
                 required
               />
               <p className="text-xs text-gray-500 mt-2">
-                Máximo: {formatCurrency(selectedContractForAction?.pending || 0)}
+                Máximo:{' '}
+                {formatCurrency(
+                  selectedContractForAction
+                    ? getContractPendingAmount(selectedContractForAction.id)
+                    : 0
+                )}
               </p>
             </div>
 
@@ -1213,7 +1243,7 @@ const Contracts = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-base font-bold text-white">
-                          {formatCurrency(inst.value)}
+                          {formatCurrency(getInstallmentCurrentValue(inst))}
                         </p>
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${

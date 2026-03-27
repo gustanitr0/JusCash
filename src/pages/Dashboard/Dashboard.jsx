@@ -15,6 +15,10 @@ import {
   installmentsService,
   transactionsService,
 } from '../../services/FirebaseServices'
+import {
+  getInstallmentCurrentValue,
+  getPendingInstallmentsTotal,
+} from '../../utils/installmentCalculations'
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -70,7 +74,7 @@ const Dashboard = () => {
   // Cálculos
   const stats = {
     totalReceived: contracts.reduce((sum, c) => sum + (c.paid || 0), 0),
-    totalReceivable: contracts.reduce((sum, c) => sum + (c.pending || 0), 0),
+    totalReceivable: getPendingInstallmentsTotal(installments),
     activeContracts: contracts.filter((c) => c.status === 'ativo').length,
     overdueInstallments: installments.filter((i) => {
       const dueDate = new Date(i.dueDate)
@@ -181,7 +185,9 @@ const Dashboard = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-white">{formatCurrency(inst.value)}</p>
+                          <p className="font-semibold text-white">
+                            {formatCurrency(getInstallmentCurrentValue(inst))}
+                          </p>
                           <p className="text-sm text-gray-300">{formatDate(inst.dueDate)}</p>
                         </div>
                       </div>

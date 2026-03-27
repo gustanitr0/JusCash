@@ -18,6 +18,12 @@ import {
   transactionsService,
 } from '../../services/FirebaseServices'
 import Modal from '../../components/Modal/Modal'
+import {
+  getDaysLate,
+  getInstallmentCurrentValue,
+  getInstallmentLateFee,
+  getPendingInstallmentsTotal,
+} from '../../utils/installmentCalculations'
 
 const Financial = () => {
   const { user } = useAuth()
@@ -93,10 +99,12 @@ const Financial = () => {
   }
 
   const handleOpenPaymentModal = (installment) => {
+    const currentValue = getInstallmentCurrentValue(installment)
+
     setModalType('payment')
     setSelectedInstallment(installment)
     setPaymentData({
-      paidValue: installment.value.toString(),
+      paidValue: currentValue.toFixed(2),
       paidDate: new Date().toISOString().split('T')[0],
       paymentMethod: 'pix',
       notes: '',
@@ -183,11 +191,19 @@ const Financial = () => {
       // Atualizar valores do contrato
       if (contract) {
         const newPaid = (contract.paid || 0) + paidValue
-        const newPending = contract.value - newPaid
+        const remainingInstallments = installments.filter(
+          (installment) =>
+            installment.contractId === selectedInstallment.contractId &&
+            installment.status !== 'pago' &&
+            installment.id !== selectedInstallment.id
+        )
+        const newPending = getPendingInstallmentsTotal(remainingInstallments, paymentData.paidDate)
+
         await contractsService.update(user.uid, contract.id, {
           ...contract,
           paid: newPaid,
           pending: newPending,
+          status: newPending <= 0 ? 'concluido' : contract.status,
         })
       }
 
@@ -258,14 +274,18 @@ const Financial = () => {
     .filter((i) => i.status === 'pendente')
     .map((inst) => {
       const contract = contracts.find((c) => c.id === inst.contractId)
-      const dueDate = new Date(inst.dueDate)
-      const today = new Date()
-      const isOverdue = dueDate < today
+      const daysLate = getDaysLate(inst.dueDate)
+      const isOverdue = daysLate > 0
+      const lateFee = getInstallmentLateFee(inst)
+      const currentValue = getInstallmentCurrentValue(inst)
 
       return {
         ...inst,
         contract,
+        currentValue,
+        daysLate,
         isOverdue,
+        lateFee,
         status: isOverdue ? 'vencido' : 'pendente',
       }
     })
@@ -401,11 +421,16 @@ const Financial = () => {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-3">
                       <div>
                         <p className="text-lg font-bold text-white break-words">
-                          {formatCurrency(inst.value)}
+                          {formatCurrency(inst.currentValue)}
                         </p>
                         <p className="text-xs text-gray-500">
                           Vencimento: {formatDate(inst.dueDate)}
                         </p>
+                        {inst.lateFee > 0 && (
+                          <p className="text-xs text-red-400">
+                            Juros por atraso: {formatCurrency(inst.lateFee)} ({inst.daysLate} dias)
+                          </p>
+                        )}
                       </div>
 
                       <button
@@ -786,8 +811,15 @@ const Financial = () => {
                 </p>
                 <p>
                   <span className="font-medium">Valor:</span>{' '}
-                  {formatCurrency(selectedInstallment.value)}
+                  {formatCurrency(selectedInstallment.currentValue || selectedInstallment.value)}
                 </p>
+                {(selectedInstallment.lateFee || 0) > 0 && (
+                  <p>
+                    <span className="font-medium">Juros por atraso:</span>{' '}
+                    {formatCurrency(selectedInstallment.lateFee)} ({selectedInstallment.daysLate}{' '}
+                    dias)
+                  </p>
+                )}
                 <p>
                   <span className="font-medium">Vencimento:</span>{' '}
                   {formatDate(selectedInstallment.dueDate)}

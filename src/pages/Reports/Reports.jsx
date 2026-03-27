@@ -17,6 +17,11 @@ import {
   transactionsService,
 } from '../../services/FirebaseServices'
 import { useAuth } from '../../contexts/auth'
+import {
+  getInstallmentCurrentValue,
+  getInstallmentLateFee,
+  getPendingInstallmentsTotal,
+} from '../../utils/installmentCalculations'
 
 const Reports = () => {
   const { user } = useAuth()
@@ -93,7 +98,7 @@ const Reports = () => {
 
   // Cálculos gerais
   const totalReceived = contracts.reduce((sum, c) => sum + (c.paid || 0), 0)
-  const totalReceivable = contracts.reduce((sum, c) => sum + (c.pending || 0), 0)
+  const totalReceivable = getPendingInstallmentsTotal(installments)
   const totalContracts = contracts.length
   const activeContracts = contracts.filter((c) => c.status === 'ativo').length
   const completedContracts = contracts.filter((c) => c.status === 'concluido').length
@@ -106,9 +111,14 @@ const Reports = () => {
   const clientsReport = clients
     .map((client) => {
       const clientContracts = contracts.filter((c) => c.clientId === client.id)
+      const clientContractIds = new Set(clientContracts.map((contract) => contract.id))
+      const clientPendingInstallments = installments.filter(
+        (installment) =>
+          installment.status !== 'pago' && clientContractIds.has(installment.contractId)
+      )
       const totalValue = clientContracts.reduce((sum, c) => sum + c.value, 0)
       const totalPaid = clientContracts.reduce((sum, c) => sum + (c.paid || 0), 0)
-      const totalPending = clientContracts.reduce((sum, c) => sum + (c.pending || 0), 0)
+      const totalPending = getPendingInstallmentsTotal(clientPendingInstallments)
 
       return {
         ...client,
@@ -135,6 +145,8 @@ const Reports = () => {
         ...inst,
         contract,
         daysLate,
+        currentValue: getInstallmentCurrentValue(inst),
+        lateFee: getInstallmentLateFee(inst),
       }
     })
     .sort((a, b) => b.daysLate - a.daysLate)
@@ -617,7 +629,7 @@ const Reports = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-white">Parcela {item.number}</td>
                       <td className="px-6 py-4 text-sm font-semibold text-white">
-                        {formatCurrency(item.value)}
+                        {formatCurrency(item.currentValue)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {formatDate(item.dueDate)}
@@ -634,6 +646,11 @@ const Reports = () => {
                         >
                           {item.daysLate} dias
                         </span>
+                        {item.lateFee > 0 && (
+                          <p className="mt-1 text-xs text-red-400">
+                            + {formatCurrency(item.lateFee)} de juros
+                          </p>
+                        )}
                       </td>
                     </tr>
                   ))}
