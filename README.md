@@ -823,33 +823,6 @@ _Solução:_ Implementar com bibliotecas jsPDF e PapaParse
 
 ---
 
-## 📋 _PRÓXIMOS PASSOS (ROADMAP)_
-
-### _Curto Prazo_
-
-- [ ] Implementar exportação de relatórios (PDF/CSV)
-- [ ] Adicionar validação de CPF completa
-- [ ] Criar testes unitários básicos
-- [ ] Implementar loading skeletons
-
-### _Médio Prazo_
-
-- [ ] Refatorar Contracts.jsx (extrair componentes)
-- [ ] Adicionar paginação nas listagens
-- [ ] Implementar sistema de backup automático
-- [ ] Criar dashboard administrativo global
-
-### _Longo Prazo_
-
-- [ ] PWA (Progressive Web App)
-- [ ] Notificações push
-- [ ] Integração com WhatsApp para envio de cobranças
-- [ ] Integração com e-mail (SendGrid/AWS SES)
-- [ ] Sistema de assinatura digital de contratos
-- [ ] Multi-idioma (i18n)
-
----
-
 ## 💡 _LIÇÕES APRENDIDAS_
 
 1. _Planejamento de Arquitetura_: Definir arquitetura de dados desde o início evita refatorações complexas
