@@ -453,6 +453,7 @@ const Clients = () => {
                   placeholder="000.000.000-00"
                   className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
+                  maxLength={14}
                 />
               </div>
 

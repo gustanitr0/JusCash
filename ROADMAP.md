@@ -7,7 +7,8 @@
 *0-2 meses*
 
 - [x] Responsividade total
-- [ ] Loading skeletons
+- [x] Loading skeletons
+- [ ] Extração de componentes menores 
 - [ ] Validação de CPF completa
 - [ ] Exportação CSV
 - [ ] Sistema básico de notificações internas
@@ -25,7 +26,7 @@
 - [ ] Filtros avançados
 - [ ] Histórico detalhado por cliente
 - [ ] Alertas automáticos de vencimentos
-- [ ] Refatoração completa das páginas e extração de componentes
+- [ ] Refatoração completa das páginas
 - [ ] Hooks customizados
 - [ ] Paginação otimizada Firestore
 - [ ] Estrutura backup manual exportável
