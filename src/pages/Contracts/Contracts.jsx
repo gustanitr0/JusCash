@@ -31,7 +31,7 @@ const PAYMENT_TYPE_OPTIONS = [
   },
   {
     value: 'interest',
-    label: 'Juros diÃ¡rios',
+    label: 'Juros diários',
     description: 'Paga somente os juros acumulados por atraso.',
   },
   {
@@ -393,7 +393,7 @@ const Contracts = () => {
 
   const getTypeLabel = (type) => {
     const labels = {
-      unico: 'Pagamento Ãšnico',
+      unico: 'Pagamento Único',
       parcelado: 'Parcelado',
       recorrente: 'Recorrente',
     }
