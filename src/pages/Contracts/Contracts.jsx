@@ -333,36 +333,36 @@ const Contracts = () => {
 
       if (selectedContract) {
         await contractsService.update(user.uid, selectedContract.id, contractData)
-        alert('EmprÃ©stimo atualizado com sucesso!')
+        alert('Empréstimo atualizado com sucesso!')
       } else {
         const newContract = await contractsService.add(user.uid, contractData)
 
         // Gerar parcelas automaticamente com valores corretos
         await generateInstallmentsWithInterest(newContract.id, contractData)
 
-        alert('EmprÃ©stimo cadastrado com sucesso!')
+        alert('Empréstimo cadastrado com sucesso!')
       }
 
       handleCloseModal()
       loadData()
     } catch (error) {
-      console.error('Erro ao salvar emprÃ©stimo:', error)
-      alert('Erro ao salvar emprÃ©stimo')
+      console.error('Erro ao salvar Empréstimo:', error)
+      alert('Erro ao salvar Empréstimo')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Deseja realmente excluir este emprÃ©stimo?')) return
+    if (!window.confirm('Deseja realmente excluir este Empréstimo?')) return
 
     try {
       await contractsService.delete(user.uid, id)
-      alert('emprÃ©stimo excluÃ­do com sucesso!')
+      alert('Empréstimo excluÃ­do com sucesso!')
       loadData()
     } catch (error) {
-      console.error('Erro ao excluir emprÃ©stimo:', error)
-      alert('Erro ao excluir emprÃ©stimo')
+      console.error('Erro ao excluir Empréstimo:', error)
+      alert('Erro ao excluir Empréstimo')
     }
   }
 
@@ -571,7 +571,7 @@ const Contracts = () => {
         status: newPending <= 0 ? 'concluido' : contract.status,
       })
 
-      // Registrar transaÃ§Ã£o
+      // Registrar transação
       await transactionsService.add(user.uid, {
         type: 'entrada',
         description: `Parcela ${selectedInstallment.number} - ${contract.clientName}`,
@@ -609,7 +609,7 @@ const Contracts = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-dark-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Carregando emprÃ©stimos...</p>
+          <p className="text-gray-300">Carregando empréstimos...</p>
         </div>
       </div>
     )
@@ -618,32 +618,32 @@ const Contracts = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-white">EmprÃ©stimos</h1>
+        <h1 className="text-2xl font-bold text-white">Empréstimos</h1>
         <button
           onClick={() => handleOpenModal()}
           className="bg-dark-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-dark-700 transition"
         >
           <Plus className="w-5 h-5" />
-          Novo EmprÃ©stimo
+          Novo Empréstimo
         </button>
       </div>
 
       {contracts.length === 0 ? (
         <div className="bg-background-tertiary rounded-lg shadow p-12 text-center">
           <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-300 text-lg mb-2">Nenhum emprÃ©stimo cadastrado</p>
-          <p className="text-gray-500 text-sm mb-6">Comece criando seu primeiro emprÃ©stimo</p>
+          <p className="text-gray-300 text-lg mb-2">Nenhum Empréstimo cadastrado</p>
+          <p className="text-gray-500 text-sm mb-6">Comece criando seu primeiro Empréstimo</p>
           <button
             onClick={() => handleOpenModal()}
             className="bg-dark-600 text-white px-6 py-2 rounded-lg hover:bg-dark-700 transition"
           >
-            Criar emprÃ©stimo
+            Criar Empréstimo
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {contracts.map((contract) => {
-            // Calcular informaÃ§Ãµes adicionais
+            // Calcular informações adicionais
             const profit = contract.totalInterest || 0
             const contractInstallments = getContractInstallments(contract.id)
             const paidInstallments = contractInstallments.filter((i) => i.status === 'pago').length
@@ -667,7 +667,7 @@ const Contracts = () => {
                     <div className="flex-1">
                       <h3 className="font-bold text-white text-lg mb-1">{contract.clientName}</h3>
                       <p className="text-sm text-gray-400 line-clamp-1">
-                        {contract.description || 'EmprÃ©stimo'}
+                        {contract.description || 'Empréstimo'}
                       </p>
                     </div>
                     <span
@@ -677,7 +677,7 @@ const Contracts = () => {
                     </span>
                   </div>
 
-                  {/* Badges de InformaÃ§Ã£o */}
+                  {/* Badges de Informação */}
                   <div className="flex items-center gap-2 mt-3">
                     <span className="px-2 py-1 bg-surface-dark text-gray-300 text-xs rounded flex items-center gap-1">
                       <FileText className="w-3 h-3" />
@@ -733,7 +733,7 @@ const Contracts = () => {
                       <p className="text-lg font-bold text-yellow-400">{formatCurrency(profit)}</p>
                     </div>
 
-                    {/* PrÃ³ximo Vencimento */}
+                    {/* Próximo Vencimento */}
                     <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <Calendar className="w-4 h-4 text-purple-400" />
@@ -805,7 +805,7 @@ const Contracts = () => {
                   </div>
                 </div>
 
-                {/* Footer com BotÃµes de AÃ§Ã£o */}
+                {/* Footer com Botões de Ação */}
                 <div className="p-4 bg-surface-dark/50 border-t border-surface-dark">
                   <div className="flex justify-center gap-2 mb-3">
                     <button
@@ -831,7 +831,7 @@ const Contracts = () => {
                       className="px-3 py-2 border border-surface-medium text-gray-300 text-xs font-medium rounded-lg hover:bg-surface-medium transition-all flex items-center justify-center gap-1.5"
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      HistÃ³rico
+                      Histórico
                     </button>
 
                     <button
@@ -857,10 +857,10 @@ const Contracts = () => {
         </div>
       )}
 
-      {/* Modal de Cadastro/EdiÃ§Ã£o */}
+      {/* Modal de Cadastro/Edição */}
       {showModal && (
         <Modal
-          title={selectedContract ? 'Editar EmprÃ©stimo' : 'Novo EmprÃ©stimo'}
+          title={selectedContract ? 'Editar Empréstimo' : 'Novo Empréstimo'}
           onClose={handleCloseModal}
           size="large"
         >
@@ -875,7 +875,7 @@ const Contracts = () => {
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
-              FormulÃ¡rio
+              Formulário
             </button>
             <button
               type="button"
@@ -887,10 +887,10 @@ const Contracts = () => {
               }`}
               disabled={!formData.value || !formData.interestRate || !formData.installments}
             >
-              SimulaÃ§Ã£o
+              Simulação
               {(!formData.value || !formData.interestRate || !formData.installments) && (
                 <span className="ml-2 px-2 py-0.5 bg-gray-600 text-gray-300 text-xs rounded">
-                  Preencha o formulÃ¡rio
+                  Preencha o formulário
                 </span>
               )}
             </button>
@@ -899,10 +899,10 @@ const Contracts = () => {
           {/* ConteÃºdo das Tabs */}
           {activeTab === 'form' ? (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* SeÃ§Ã£o 1: Dados BÃ¡sicos */}
+              {/* Seção 1: Dados Básicos */}
               <div className="bg-surface-dark p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-dark-400 mb-4 uppercase tracking-wide">
-                  Dados BÃ¡sicos
+                  Dados Básicos
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
@@ -927,14 +927,14 @@ const Contracts = () => {
 
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      DescriÃ§Ã£o do EmprÃ©stimo
+                      Descrição do Empréstimo
                     </label>
                     <textarea
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
                       rows="2"
-                      placeholder="Ex: EmprÃ©stimo pessoal, Capital de giro..."
+                      placeholder="Ex: Empréstimo pessoal, Capital de giro..."
                       className="input-dark w-full resize-none"
                     />
                   </div>
@@ -969,7 +969,7 @@ const Contracts = () => {
                 </div>
               </div>
 
-              {/* SeÃ§Ã£o 2: Valores e Juros */}
+              {/* Seção 2: Valores e Juros */}
               <div className="bg-surface-dark p-4 rounded-lg">
                 <h3 className="text-sm font-semibold text-dark-400 mb-4 uppercase tracking-wide">
                   Valores e Juros
@@ -1027,7 +1027,7 @@ const Contracts = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      NÃºmero de Parcelas *
+                      Número de Parcelas *
                     </label>
                     <input
                       type="number"
@@ -1042,7 +1042,7 @@ const Contracts = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      FrequÃªncia *
+                      Frequência *
                     </label>
                     <select
                       name="frequency"
@@ -1051,7 +1051,7 @@ const Contracts = () => {
                       className="input-dark w-full"
                       required
                     >
-                      <option value="diaria">DiÃ¡ria</option>
+                      <option value="diaria">Diária</option>
                       <option value="semanal">Semanal</option>
                       <option value="quinzenal">Quinzenal</option>
                       <option value="mensal">Mensal</option>
@@ -1069,18 +1069,18 @@ const Contracts = () => {
                       required
                     >
                       <option value="ativo">Ativo</option>
-                      <option value="concluido">ConcluÃ­do</option>
+                      <option value="concluido">Concluí­do</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
                   </div>
                 </div>
               </div>
 
-              {/* SeÃ§Ã£o 3: Valores Calculados */}
+              {/* Seção 3: Valores Calculados */}
               <div className="bg-gradient-to-br from-dark-600/20 to-dark-500/20 border border-dark-500/30 p-6 rounded-lg">
                 <h3 className="text-sm font-semibold text-dark-400 mb-4 uppercase tracking-wide flex items-center gap-2">
                   <DollarSign className="w-4 h-4" />
-                  CÃ¡lculos AutomÃ¡ticos
+                  Cálculos Automáticos
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-surface-dark p-4 rounded-lg">
@@ -1105,10 +1105,10 @@ const Contracts = () => {
                   </div>
                 </div>
 
-                {/* FÃ³rmula explicativa */}
+                {/* Fórmula explicativa */}
                 <div className="mt-4 p-3 bg-surface-dark/50 rounded border border-surface-medium">
                   <p className="text-xs text-gray-400">
-                    <span className="font-semibold text-gray-300">FÃ³rmula usada:</span>{' '}
+                    <span className="font-semibold text-gray-300">Fórmula usada:</span>{' '}
                     {formData.interestType === 'simples' ? (
                       <>Juros Simples - J = P Ã— i Ã— n | M = P + J</>
                     ) : (
@@ -1122,7 +1122,7 @@ const Contracts = () => {
                 </div>
               </div>
 
-              {/* SeÃ§Ã£o 4: Juros por Atraso */}
+              {/* Seção 4: Juros por Atraso */}
               <div className="bg-surface-dark p-4 rounded-lg">
                 <div className="flex items-start gap-3">
                   <input
@@ -1138,10 +1138,10 @@ const Contracts = () => {
                       htmlFor="lateFeeEnabled"
                       className="text-sm font-medium text-gray-300 cursor-pointer"
                     >
-                      Aplicar juros diÃ¡rios em caso de atraso
+                      Aplicar juros diários em caso de atraso
                     </label>
                     <p className="text-xs text-gray-500 mt-1">
-                      Ativa a cobranÃ§a de juros adicionais sobre parcelas vencidas
+                      Ativa a cobrança de juros adicionais sobre parcelas vencidas
                     </p>
                   </div>
                 </div>
@@ -1149,27 +1149,25 @@ const Contracts = () => {
                 {formData.lateFeeEnabled && (
                   <div className="mt-4 pl-7 animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Taxa de Juros DiÃ¡rio (%) *
+                      Taxa de Juros Diário (%) *
                     </label>
                     <input
                       type="number"
                       name="lateFeeRate"
                       value={formData.lateFeeRate}
                       onChange={handleChange}
-                      placeholder="Ex: 0.033 (equivale a 1% ao mÃªs)"
+                      placeholder="Ex: 0.033 (equivale a 1% ao mês)"
                       step="0.001"
                       min="0"
                       className="input-dark w-full md:w-64"
                       required={formData.lateFeeEnabled}
                     />
-                    <p className="text-xs text-gray-500 mt-2">
-                      ðŸ’¡ Dica: 1% ao mÃªs â‰ˆ 0.033% ao dia
-                    </p>
+                    <p className="text-xs text-gray-500 mt-2">💡 Dica: 1% ao mês ≈ 0.033% ao dia</p>
                   </div>
                 )}
               </div>
 
-              {/* BotÃµes de AÃ§Ã£o */}
+              {/* Botões de Ação */}
               <div className="flex gap-3 pt-4 border-t border-surface-dark">
                 <button
                   type="button"
@@ -1186,15 +1184,15 @@ const Contracts = () => {
                   className="btn-secondary-dark flex-1"
                   disabled={!formData.value || !formData.interestRate || !formData.installments}
                 >
-                  Ver SimulaÃ§Ã£o
+                  Ver Simulação
                 </button>
 
                 <button type="submit" className="btn-primary-dark flex-1" disabled={submitting}>
                   {submitting
                     ? 'Salvando...'
                     : selectedContract
-                      ? 'Atualizar EmprÃ©stimo'
-                      : 'Criar EmprÃ©stimo'}
+                      ? 'Atualizar Empréstimo'
+                      : 'Criar Empréstimo'}
                 </button>
               </div>
             </form>
@@ -1206,7 +1204,7 @@ const Contracts = () => {
                 formatDate={(date) => new Date(date).toLocaleDateString('pt-BR')}
               />
 
-              {/* BotÃµes de AÃ§Ã£o */}
+              {/* BotÃµes de Ação */}
               <div className="flex gap-3 mt-6 pt-6 border-t border-surface-dark">
                 <button
                   type="button"
@@ -1222,7 +1220,7 @@ const Contracts = () => {
                   className="btn-primary-dark flex-1"
                   disabled={submitting}
                 >
-                  {submitting ? 'Salvando...' : 'Confirmar e Criar EmprÃ©stimo'}
+                  {submitting ? 'Salvando...' : 'Confirmar e Criar Empréstimo'}
                 </button>
               </div>
             </div>
@@ -1445,7 +1443,7 @@ const Contracts = () => {
         >
           <div className="space-y-4">
             <div className="bg-dark-500/10 border border-dark-500/30 rounded-lg p-4">
-              <p className="text-sm text-gray-400 mb-2">EmprÃ©stimo de:</p>
+              <p className="text-sm text-gray-400 mb-2">Empréstimo de:</p>
               <p className="text-lg font-bold text-white">
                 {selectedContractForAction?.clientName}
               </p>
