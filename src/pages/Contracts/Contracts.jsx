@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import {
   Plus,
   Search,
@@ -19,9 +19,27 @@ import { useAuth } from '../../contexts/auth'
 import Modal from '../../components/Modal/Modal'
 import LoanSimulator from '../../components/LoanSimulator'
 import {
-  getInstallmentCurrentValue,
+  getInstallmentPaymentBreakdown,
   getPendingInstallmentsTotal,
 } from '../../utils/installmentCalculations'
+
+const PAYMENT_TYPE_OPTIONS = [
+  {
+    value: 'installment',
+    label: 'Valor da parcela',
+    description: 'Quita apenas o principal da parcela.',
+  },
+  {
+    value: 'interest',
+    label: 'Juros diários',
+    description: 'Paga somente os juros acumulados por atraso.',
+  },
+  {
+    value: 'total',
+    label: 'Valor total',
+    description: 'Quita principal e juros acumulados.',
+  },
+]
 
 const Contracts = () => {
   const { user } = useAuth()
@@ -38,12 +56,12 @@ const Contracts = () => {
     interestRate: '', // Taxa de juros (%)
     type: 'parcelado',
     interestType: 'simples', // simples, composto
-    installments: '1', // Número de parcelas
+    installments: '1', // NÃºmero de parcelas
     totalInterest: 0, // Juros total (calculado)
     installmentValue: 0, // Valor da parcela (calculado)
     totalReceivable: 0, // Total a receber (calculado)
-    lateFeeEnabled: false, // Juros diário por atraso
-    lateFeeRate: '', // Taxa de juros diário (%)
+    lateFeeEnabled: false, // Juros diÃ¡rio por atraso
+    lateFeeRate: '', // Taxa de juros diÃ¡rio (%)
     startDate: new Date().toISOString().split('T')[0], // Data do contrato
     firstInstallmentDate: new Date().toISOString().split('T')[0], // Data da primeira parcela
     frequency: 'mensal',
@@ -53,10 +71,15 @@ const Contracts = () => {
   const [activeTab, setActiveTab] = useState('form')
   const [installments, setInstallments] = useState([])
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [showInterestModal, setShowInterestModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [selectedContractForAction, setSelectedContractForAction] = useState(null)
-  const [paymentAmount, setPaymentAmount] = useState('')
+  const [selectedInstallmentId, setSelectedInstallmentId] = useState('')
+  const [paymentData, setPaymentData] = useState({
+    paymentType: 'total',
+    paidValue: '',
+    paidDate: new Date().toISOString().split('T')[0],
+    paymentMethod: 'pix',
+  })
 
   useEffect(() => {
     if (user?.uid) {
@@ -71,7 +94,7 @@ const Contracts = () => {
       setLoading(true)
 
       if (!user?.uid) {
-        console.error('user.uid não disponivel')
+        console.error('user.uid nÃ£o disponivel')
         return
       }
 
@@ -179,17 +202,17 @@ const Contracts = () => {
     }
   }
 
-  // Função para calcular juros simples
+  // FunÃ§Ã£o para calcular juros simples
   const calculateSimpleInterest = (principal, rate, periods) => {
     return principal * (rate / 100) * periods
   }
 
-  // Função para calcular juros compostos
+  // FunÃ§Ã£o para calcular juros compostos
   const calculateCompoundInterest = (principal, rate, periods) => {
     return principal * (Math.pow(1 + rate / 100, periods) - 1)
   }
 
-  // Função para calcular todos os valores financeiros
+  // FunÃ§Ã£o para calcular todos os valores financeiros
   const calculateFinancialValues = (value, interestRate, installments, interestType) => {
     const principal = parseFloat(value) || 0
     const rate = parseFloat(interestRate) || 0
@@ -323,23 +346,23 @@ const Contracts = () => {
       handleCloseModal()
       loadData()
     } catch (error) {
-      console.error('Erro ao salvar empréstimo:', error)
-      alert('Erro ao salvar empréstimo')
+      console.error('Erro ao salvar Empréstimo:', error)
+      alert('Erro ao salvar Empréstimo')
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Deseja realmente excluir este empréstimo?')) return
+    if (!window.confirm('Deseja realmente excluir este Empréstimo?')) return
 
     try {
       await contractsService.delete(user.uid, id)
-      alert('empréstimo excluído com sucesso!')
+      alert('Empréstimo excluÃ­do com sucesso!')
       loadData()
     } catch (error) {
-      console.error('Erro ao excluir empréstimo:', error)
-      alert('Erro ao excluir empréstimo')
+      console.error('Erro ao excluir Empréstimo:', error)
+      alert('Erro ao excluir Empréstimo')
     }
   }
 
@@ -377,43 +400,169 @@ const Contracts = () => {
     return labels[type] || type
   }
 
-  // Abrir modal de pagamento
+  const getInstallmentDetails = (installment, referenceDate = new Date()) => {
+    if (!installment) return null
+
+    const { principalBalance, lateFeeBalance, totalBalance } = getInstallmentPaymentBreakdown(
+      installment,
+      referenceDate
+    )
+
+    return {
+      ...installment,
+      principalBalance,
+      lateFeeBalance,
+      totalBalance,
+    }
+  }
+
+  const getSelectedInstallment = () =>
+    installments.find((installment) => installment.id === selectedInstallmentId)
+
+  const getSelectedInstallmentDetails = () =>
+    getInstallmentDetails(getSelectedInstallment(), paymentData.paidDate)
+
+  const getPaymentTypeAmount = (installment, paymentType, referenceDate = paymentData.paidDate) => {
+    const details = getInstallmentDetails(installment, referenceDate)
+
+    if (!details) return 0
+    if (paymentType === 'interest') return details.lateFeeBalance
+    if (paymentType === 'installment') return details.principalBalance
+    return details.totalBalance
+  }
+
   const handleOpenPaymentModal = (contract) => {
+    const contractInstallments = getContractInstallments(contract.id)
+      .filter((installment) => installment.status !== 'pago')
+      .sort((a, b) => a.number - b.number)
+    const firstInstallment = contractInstallments[0]
+    const today = new Date().toISOString().split('T')[0]
+    const firstDetails = getInstallmentDetails(firstInstallment, today)
+    const paymentType = firstDetails?.lateFeeBalance > 0 ? 'total' : 'installment'
+
     setSelectedContractForAction(contract)
-    setPaymentAmount('')
+    setSelectedInstallmentId(firstInstallment?.id || '')
+    setPaymentData({
+      paymentType,
+      paidValue: firstInstallment
+        ? getPaymentTypeAmount(firstInstallment, paymentType, today).toFixed(2)
+        : '',
+      paidDate: today,
+      paymentMethod: 'pix',
+    })
     setShowPaymentModal(true)
   }
 
-  // Pagar apenas juros
-  const handlePayInterestOnly = (contract) => {
-    setSelectedContractForAction(contract)
-    setPaymentAmount(contract.totalInterest?.toString() || '0')
-    setShowInterestModal(true)
-  }
-
-  // Ver histórico de pagamentos
+  // Ver histÃ³rico de pagamentos
   const handleViewHistory = (contract) => {
     setSelectedContractForAction(contract)
     setShowHistoryModal(true)
   }
+
+  const handlePaymentChange = (e) => {
+    const { name, value } = e.target
+    setPaymentData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  useEffect(() => {
+    const selectedInstallment = getSelectedInstallment()
+
+    if (!selectedInstallment || !showPaymentModal) return
+
+    const amount = getPaymentTypeAmount(
+      selectedInstallment,
+      paymentData.paymentType,
+      paymentData.paidDate
+    )
+
+    setPaymentData((prev) => ({
+      ...prev,
+      paidValue: amount > 0 ? amount.toFixed(2) : '',
+    }))
+  }, [selectedInstallmentId, paymentData.paymentType, paymentData.paidDate, showPaymentModal])
+
+  const applyPaymentToInstallment = (installment, paidValue, paymentType, paidDate) => {
+    const details = getInstallmentDetails(installment, paidDate)
+
+    if (!details) {
+      throw new Error('Selecione uma parcela vÃ¡lida.')
+    }
+
+    const maxAllowed = getPaymentTypeAmount(installment, paymentType, paidDate)
+
+    if (!paidValue || paidValue <= 0) {
+      throw new Error('Informe um valor vÃ¡lido para o pagamento.')
+    }
+
+    if (paidValue > maxAllowed) {
+      throw new Error('O valor informado Ã© maior do que o permitido para a opÃ§Ã£o selecionada.')
+    }
+
+    let principalIncrement = 0
+    let lateFeeIncrement = 0
+
+    if (paymentType === 'installment') {
+      principalIncrement = paidValue
+    } else if (paymentType === 'interest') {
+      lateFeeIncrement = paidValue
+    } else {
+      principalIncrement = details.principalBalance
+      lateFeeIncrement = Number((paidValue - principalIncrement).toFixed(2))
+    }
+
+    const principalPaid = Number(((installment.principalPaid || 0) + principalIncrement).toFixed(2))
+    const lateFeePaid = Number(((installment.lateFeePaid || 0) + lateFeeIncrement).toFixed(2))
+    const remainingPrincipal = Number(
+      Math.max(0, details.principalBalance - principalIncrement).toFixed(2)
+    )
+    const remainingLateFee = Number(
+      Math.max(0, details.lateFeeBalance - lateFeeIncrement).toFixed(2)
+    )
+
+    return {
+      ...installment,
+      principalPaid,
+      lateFeePaid,
+      paidValue: Number((principalPaid + lateFeePaid).toFixed(2)),
+      paidDate,
+      status: remainingPrincipal <= 0 && remainingLateFee <= 0 ? 'pago' : 'parcial',
+    }
+  }
+
+  const paymentAmount = paymentData.paidValue
 
   // Processar pagamento
   const handleProcessPayment = async (e) => {
     e.preventDefault()
 
     if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      alert('Informe um valor válido')
+      alert('Informe um valor vÃ¡lido')
       return
     }
 
     try {
-      const amount = parseFloat(paymentAmount)
+      const selectedInstallment = getSelectedInstallment()
+      const amount = parseFloat(paymentData.paidValue)
       const contract = selectedContractForAction
-      const currentPending = getContractPendingAmount(contract.id)
+      const updatedInstallment = applyPaymentToInstallment(
+        selectedInstallment,
+        amount,
+        paymentData.paymentType,
+        paymentData.paidDate
+      )
+      const updatedInstallments = installments.map((installment) =>
+        installment.id === selectedInstallment.id ? updatedInstallment : installment
+      )
+      const contractInstallments = updatedInstallments.filter(
+        (installment) => installment.contractId === contract.id
+      )
+      const newPaid = Number(((contract.paid || 0) + amount).toFixed(2))
+      const newPending = getPendingInstallmentsTotal(contractInstallments, paymentData.paidDate)
 
-      // Atualizar valores do contrato
-      const newPaid = (contract.paid || 0) + amount
-      const newPending = Math.max(0, Number((currentPending - amount).toFixed(2)))
+      await installmentsService.update(user.uid, selectedInstallment.id, updatedInstallment)
 
       await contractsService.update(user.uid, contract.id, {
         ...contract,
@@ -425,24 +574,35 @@ const Contracts = () => {
       // Registrar transação
       await transactionsService.add(user.uid, {
         type: 'entrada',
-        description: `Pagamento - ${contract.clientName}`,
+        description: `Parcela ${selectedInstallment.number} - ${contract.clientName}`,
         value: amount,
-        date: new Date().toISOString().split('T')[0],
+        date: paymentData.paidDate,
         category: 'honorario',
-        paymentMethod: 'pix',
-        contractId: contract.id,
+        paymentMethod: paymentData.paymentMethod,
         createdBy: user.uid,
       })
 
       alert('Pagamento registrado com sucesso!')
       setShowPaymentModal(false)
-      setShowInterestModal(false)
+      setSelectedInstallmentId('')
       loadData()
     } catch (error) {
       console.error('Erro ao processar pagamento:', error)
-      alert('Erro ao processar pagamento')
+      alert(error.message || 'Erro ao processar pagamento')
     }
   }
+
+  const paymentContractInstallments = selectedContractForAction
+    ? getContractInstallments(selectedContractForAction.id)
+        .filter((installment) => installment.status !== 'pago')
+        .sort((a, b) => a.number - b.number)
+    : []
+  const selectedInstallmentDetails = getSelectedInstallmentDetails()
+  const selectedPaymentLimit = getPaymentTypeAmount(
+    getSelectedInstallment(),
+    paymentData.paymentType,
+    paymentData.paidDate
+  )
 
   if (loading) {
     return (
@@ -471,13 +631,13 @@ const Contracts = () => {
       {contracts.length === 0 ? (
         <div className="bg-background-tertiary rounded-lg shadow p-12 text-center">
           <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-300 text-lg mb-2">Nenhum empréstimo cadastrado</p>
-          <p className="text-gray-500 text-sm mb-6">Comece criando seu primeiro empréstimo</p>
+          <p className="text-gray-300 text-lg mb-2">Nenhum Empréstimo cadastrado</p>
+          <p className="text-gray-500 text-sm mb-6">Comece criando seu primeiro Empréstimo</p>
           <button
             onClick={() => handleOpenModal()}
             className="bg-dark-600 text-white px-6 py-2 rounded-lg hover:bg-dark-700 transition"
           >
-            Criar empréstimo
+            Criar Empréstimo
           </button>
         </div>
       ) : (
@@ -490,7 +650,8 @@ const Contracts = () => {
             const totalInstallments = contract.installments || 0
             const currentPending = getContractPendingAmount(contract.id)
             const currentTotalReceivable = getContractCurrentTotal(contract)
-            const progressBase = currentTotalReceivable > 0 ? currentTotalReceivable : contract.value || 1
+            const progressBase =
+              currentTotalReceivable > 0 ? currentTotalReceivable : contract.value || 1
             const nextDueDate = contractInstallments
               .filter((i) => i.status === 'pendente')
               .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0]?.dueDate
@@ -630,8 +791,7 @@ const Contracts = () => {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-400">Progresso Geral</span>
                       <span className="text-xs font-bold text-white">
-                        {Math.round(((contract.paid || 0) / progressBase) * 100)}
-                        %
+                        {Math.round(((contract.paid || 0) / progressBase) * 100)}%
                       </span>
                     </div>
                     <div className="w-full bg-surface-medium rounded-full h-3 overflow-hidden">
@@ -647,7 +807,7 @@ const Contracts = () => {
 
                 {/* Footer com Botões de Ação */}
                 <div className="p-4 bg-surface-dark/50 border-t border-surface-dark">
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="flex justify-center gap-2 mb-3">
                     <button
                       onClick={() => handleOpenPaymentModal(contract)}
                       className="px-3 py-2.5 bg-gradient-to-r from-green-600 to-green-500 text-white text-sm font-medium rounded-lg hover:from-green-500 hover:to-green-400 transition-all shadow-lg hover:shadow-green-500/20 flex items-center justify-center gap-2"
@@ -656,13 +816,13 @@ const Contracts = () => {
                       Registrar Pagamento
                     </button>
 
-                    <button
+                    {/*<button
                       onClick={() => handlePayInterestOnly(contract)}
                       className="px-3 py-2.5 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-sm font-medium rounded-lg hover:from-yellow-500 hover:to-yellow-400 transition-all shadow-lg hover:shadow-yellow-500/20 flex items-center justify-center gap-2"
                     >
                       <TrendingUp className="w-4 h-4" />
                       Pagar Juros
-                    </button>
+                    </button> */}
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
@@ -736,7 +896,7 @@ const Contracts = () => {
             </button>
           </div>
 
-          {/* Conteúdo das Tabs */}
+          {/* ConteÃºdo das Tabs */}
           {activeTab === 'form' ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Seção 1: Dados Básicos */}
@@ -909,7 +1069,7 @@ const Contracts = () => {
                       required
                     >
                       <option value="ativo">Ativo</option>
-                      <option value="concluido">Concluído</option>
+                      <option value="concluido">Concluí­do</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
                   </div>
@@ -950,9 +1110,9 @@ const Contracts = () => {
                   <p className="text-xs text-gray-400">
                     <span className="font-semibold text-gray-300">Fórmula usada:</span>{' '}
                     {formData.interestType === 'simples' ? (
-                      <>Juros Simples - J = P × i × n | M = P + J</>
+                      <>Juros Simples - J = P Ã— i Ã— n | M = P + J</>
                     ) : (
-                      <>Juros Compostos - M = P × (1 + i)^n</>
+                      <>Juros Compostos - M = P Ã— (1 + i)^n</>
                     )}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -1044,14 +1204,14 @@ const Contracts = () => {
                 formatDate={(date) => new Date(date).toLocaleDateString('pt-BR')}
               />
 
-              {/* Botões de Ação */}
+              {/* BotÃµes de Ação */}
               <div className="flex gap-3 mt-6 pt-6 border-t border-surface-dark">
                 <button
                   type="button"
                   onClick={() => setActiveTab('form')}
                   className="btn-secondary-dark flex-1"
                 >
-                  Voltar ao Formulário
+                  Voltar ao FormulÃ¡rio
                 </button>
 
                 <button
@@ -1069,7 +1229,7 @@ const Contracts = () => {
       )}
 
       {/* Modal de Pagamento */}
-      {showPaymentModal && (
+      {showPaymentModal && selectedContractForAction && (
         <Modal
           title="Registrar Pagamento"
           onClose={() => setShowPaymentModal(false)}
@@ -1106,32 +1266,153 @@ const Contracts = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Valor do Pagamento (R$) *
-              </label>
-              <input
-                type="number"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                max={
-                  selectedContractForAction
-                    ? getContractPendingAmount(selectedContractForAction.id)
-                    : 0
-                }
+              <label className="block text-sm font-medium text-gray-300 mb-2">Parcela *</label>
+              <select
+                value={selectedInstallmentId}
+                onChange={(e) => setSelectedInstallmentId(e.target.value)}
                 className="input-dark w-full"
                 required
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Máximo:{' '}
-                {formatCurrency(
-                  selectedContractForAction
-                    ? getContractPendingAmount(selectedContractForAction.id)
-                    : 0
-                )}
-              </p>
+              >
+                <option value="">Selecione uma parcela</option>
+                {paymentContractInstallments.map((installment) => {
+                  const details = getInstallmentDetails(installment, paymentData.paidDate)
+
+                  return (
+                    <option key={installment.id} value={installment.id}>
+                      Parcela {installment.number} - {formatCurrency(details?.totalBalance || 0)}
+                    </option>
+                  )
+                })}
+              </select>
+            </div>
+
+            {selectedInstallmentDetails && (
+              <>
+                <div className="bg-surface-dark rounded-lg p-4 border border-surface-medium">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500">Saldo da parcela</p>
+                      <p className="font-semibold text-white">
+                        {formatCurrency(selectedInstallmentDetails.principalBalance)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Juros diários</p>
+                      <p className="font-semibold text-yellow-400">
+                        {formatCurrency(selectedInstallmentDetails.lateFeeBalance)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Total em aberto</p>
+                      <p className="font-semibold text-green-400">
+                        {formatCurrency(selectedInstallmentDetails.totalBalance)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Tipo de pagamento *
+                  </label>
+                  <div className="grid grid-cols-1 gap-3">
+                    {PAYMENT_TYPE_OPTIONS.map((option) => {
+                      const optionAmount = getPaymentTypeAmount(
+                        getSelectedInstallment(),
+                        option.value,
+                        paymentData.paidDate
+                      )
+                      const disabled = optionAmount <= 0
+
+                      return (
+                        <label
+                          key={option.value}
+                          className={`rounded-lg border p-3 transition ${
+                            paymentData.paymentType === option.value
+                              ? 'border-dark-500 bg-dark-500/10'
+                              : 'border-surface-medium bg-background-tertiary'
+                          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentType"
+                            value={option.value}
+                            checked={paymentData.paymentType === option.value}
+                            onChange={handlePaymentChange}
+                            disabled={disabled}
+                            className="sr-only"
+                          />
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-white">{option.label}</p>
+                              <p className="text-xs text-gray-400">{option.description}</p>
+                            </div>
+                            <span className="text-sm font-semibold text-green-400">
+                              {formatCurrency(optionAmount)}
+                            </span>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Valor do Pagamento (R$) *
+                </label>
+                <input
+                  type="number"
+                  name="paidValue"
+                  value={paymentData.paidValue}
+                  onChange={handlePaymentChange}
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  max={selectedPaymentLimit}
+                  className="input-dark w-full"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Máximo: {formatCurrency(selectedPaymentLimit)}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Data do Pagamento *
+                </label>
+                <input
+                  type="date"
+                  name="paidDate"
+                  value={paymentData.paidDate}
+                  onChange={handlePaymentChange}
+                  className="input-dark w-full"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Método de Pagamento *
+                </label>
+                <select
+                  name="paymentMethod"
+                  value={paymentData.paymentMethod}
+                  onChange={handlePaymentChange}
+                  className="input-dark w-full"
+                  required
+                >
+                  <option value="pix">PIX</option>
+                  <option value="dinheiro">Dinheiro</option>
+                  <option value="cartao">Cartão</option>
+                  <option value="transferencia">Transferência</option>
+                  <option value="boleto">Boleto</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -1142,78 +1423,21 @@ const Contracts = () => {
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary-dark flex-1">
-                Confirmar Pagamento
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Modal de Pagar Juros */}
-      {showInterestModal && (
-        <Modal
-          title="Pagar Somente Juros"
-          onClose={() => setShowInterestModal(false)}
-          size="default"
-        >
-          <form onSubmit={handleProcessPayment} className="space-y-4">
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-              <p className="text-sm text-gray-400 mb-2">Pagamento de juros para:</p>
-              <p className="text-lg font-bold text-white">
-                {selectedContractForAction?.clientName}
-              </p>
-              <div className="mt-4">
-                <p className="text-xs text-gray-500">Total de Juros</p>
-                <p className="text-2xl font-bold text-yellow-400">
-                  {formatCurrency(selectedContractForAction?.totalInterest || 0)}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-              <p className="text-xs text-blue-300 flex items-start gap-2">
-                <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" />O pagamento de juros reduzirá
-                o saldo devedor sem afetar o principal emprestado.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Valor do Pagamento (R$) *
-              </label>
-              <input
-                type="number"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                className="input-dark w-full"
-                required
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
               <button
-                type="button"
-                onClick={() => setShowInterestModal(false)}
-                className="btn-secondary-dark flex-1"
+                type="submit"
+                className="btn-primary-dark flex-1"
+                disabled={!selectedInstallmentId || selectedPaymentLimit <= 0}
               >
-                Cancelar
-              </button>
-              <button type="submit" className="btn-primary-dark flex-1">
                 Confirmar Pagamento
               </button>
             </div>
           </form>
         </Modal>
       )}
-
-      {/* Modal de Histórico */}
+      {/* Modal de HistÃ³rico */}
       {showHistoryModal && (
         <Modal
-          title="Histórico de Pagamentos"
+          title="HistÃ³rico de Pagamentos"
           onClose={() => setShowHistoryModal(false)}
           size="large"
         >
@@ -1243,7 +1467,7 @@ const Contracts = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-base font-bold text-white">
-                          {formatCurrency(getInstallmentCurrentValue(inst))}
+                          {formatCurrency(getInstallmentDetails(inst)?.totalBalance || 0)}
                         </p>
                         <span
                           className={`text-xs px-2 py-1 rounded-full ${

@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../contexts/auth'
-import {
-  Plus,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Filter,
-  Calendar,
-  Download,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-} from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import {
   contractsService,
   installmentsService,
@@ -20,10 +9,27 @@ import {
 import Modal from '../../components/Modal/Modal'
 import {
   getDaysLate,
-  getInstallmentCurrentValue,
-  getInstallmentLateFee,
+  getInstallmentPaymentBreakdown,
   getPendingInstallmentsTotal,
 } from '../../utils/installmentCalculations'
+
+const PAYMENT_TYPE_OPTIONS = [
+  {
+    value: 'installment',
+    label: 'Valor da parcela',
+    description: 'Quita apenas o principal da parcela.',
+  },
+  {
+    value: 'interest',
+    label: 'Juros diários',
+    description: 'Paga somente os juros acumulados por atraso.',
+  },
+  {
+    value: 'total',
+    label: 'Valor total',
+    description: 'Quita principal e juros acumulados.',
+  },
+]
 
 const Financial = () => {
   const { user } = useAuth()
@@ -31,20 +37,11 @@ const Financial = () => {
   const [installments, setInstallments] = useState([])
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState('transaction') // 'transaction' ou 'payment'
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedInstallment, setSelectedInstallment] = useState(null)
   const [filterType, setFilterType] = useState('all')
-  const [filterPeriod, setFilterPeriod] = useState('month')
-  const [formData, setFormData] = useState({
-    type: 'entrada',
-    description: '',
-    value: '',
-    date: new Date().toISOString().split('T')[0],
-    category: 'honorario',
-    paymentMethod: 'pix',
-  })
   const [paymentData, setPaymentData] = useState({
+    paymentType: 'total',
     paidValue: '',
     paidDate: new Date().toISOString().split('T')[0],
     paymentMethod: 'pix',
@@ -85,77 +82,160 @@ const Financial = () => {
     }
   }
 
-  const handleOpenTransactionModal = () => {
-    setModalType('transaction')
-    setFormData({
-      type: 'entrada',
-      description: '',
-      value: '',
-      date: new Date().toISOString().split('T')[0],
-      category: 'honorario',
-      paymentMethod: 'pix',
-    })
-    setShowModal(true)
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value)
+
+  const formatDate = (date) => new Date(date).toLocaleDateString('pt-BR')
+
+  const getStatusColor = (status) => {
+    const colors = {
+      pago: 'bg-green-500 text-white',
+      parcial: 'bg-blue-500 text-white',
+      pendente: 'bg-yellow-500 text-white',
+      vencido: 'bg-red-500 text-white',
+    }
+    return colors[status] || 'bg-surface-medium text-gray-800'
+  }
+
+  const getStatusIcon = (status) => {
+    const icons = {
+      pago: <CheckCircle className="w-4 h-4" />,
+      parcial: <Clock className="w-4 h-4" />,
+      pendente: <Clock className="w-4 h-4" />,
+      vencido: <AlertCircle className="w-4 h-4" />,
+    }
+    return icons[status] || <Clock className="w-4 h-4" />
+  }
+
+  const getInstallmentDetails = (installment, referenceDate = new Date()) => {
+    if (!installment) return null
+
+    const contract = contracts.find((item) => item.id === installment.contractId)
+    const daysLate = getDaysLate(installment.dueDate, referenceDate)
+    const { principalBalance, lateFeeBalance, totalBalance } = getInstallmentPaymentBreakdown(
+      installment,
+      referenceDate
+    )
+
+    return {
+      ...installment,
+      contract,
+      daysLate,
+      isOverdue: daysLate > 0,
+      principalBalance,
+      lateFeeBalance,
+      totalBalance,
+      status:
+        installment.status === 'pago'
+          ? 'pago'
+          : daysLate > 0
+            ? 'vencido'
+            : installment.status || 'pendente',
+    }
+  }
+
+  const getPaymentTypeAmount = (installment, paymentType, referenceDate = paymentData.paidDate) => {
+    const details = getInstallmentDetails(installment, referenceDate)
+
+    if (!details) return 0
+    if (paymentType === 'interest') return details.lateFeeBalance
+    if (paymentType === 'installment') return details.principalBalance
+    return details.totalBalance
   }
 
   const handleOpenPaymentModal = (installment) => {
-    const currentValue = getInstallmentCurrentValue(installment)
+    const today = new Date().toISOString().split('T')[0]
+    const details = getInstallmentDetails(installment, today)
+    const paymentType = details?.lateFeeBalance > 0 ? 'total' : 'installment'
+    const amount = getPaymentTypeAmount(installment, paymentType, today)
 
-    setModalType('payment')
     setSelectedInstallment(installment)
     setPaymentData({
-      paidValue: currentValue.toFixed(2),
-      paidDate: new Date().toISOString().split('T')[0],
+      paymentType,
+      paidValue: amount > 0 ? amount.toFixed(2) : '',
+      paidDate: today,
       paymentMethod: 'pix',
       notes: '',
     })
-    setShowModal(true)
+    setShowPaymentModal(true)
   }
 
   const handleCloseModal = () => {
-    setShowModal(false)
-    setModalType('transaction')
+    setShowPaymentModal(false)
     setSelectedInstallment(null)
   }
 
-  const handleTransactionChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
-
   const handlePaymentChange = (e) => {
-    setPaymentData({
-      ...paymentData,
-      [e.target.name]: e.target.value,
-    })
+    const { name, value } = e.target
+    setPaymentData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
   }
 
-  const handleSubmitTransaction = async (e) => {
-    e.preventDefault()
-    setSubmitting(true)
+  useEffect(() => {
+    if (!selectedInstallment) return
 
-    try {
-      const transactionData = {
-        type: formData.type,
-        description: formData.description,
-        value: parseFloat(formData.value),
-        date: formData.date,
-        category: formData.category,
-        paymentMethod: formData.paymentMethod,
-        createdBy: user.uid,
-      }
+    const amount = getPaymentTypeAmount(
+      selectedInstallment,
+      paymentData.paymentType,
+      paymentData.paidDate
+    )
 
-      await transactionsService.add(user.uid, transactionData)
-      alert('Transação registrada com sucesso!')
-      handleCloseModal()
-      loadData()
-    } catch (error) {
-      console.error('Erro ao registrar transação:', error)
-      alert('Erro ao registrar transação')
-    } finally {
-      setSubmitting(false)
+    setPaymentData((prev) => ({
+      ...prev,
+      paidValue: amount > 0 ? amount.toFixed(2) : '',
+    }))
+  }, [selectedInstallment, paymentData.paymentType, paymentData.paidDate])
+
+  const applyPaymentToInstallment = (installment, paidValue, paymentType, paidDate) => {
+    const details = getInstallmentDetails(installment, paidDate)
+
+    if (!details) {
+      throw new Error('Parcela não encontrada')
+    }
+
+    const maxAllowed = getPaymentTypeAmount(installment, paymentType, paidDate)
+
+    if (!paidValue || paidValue <= 0) {
+      throw new Error('Informe um valor válido para o pagamento.')
+    }
+
+    if (paidValue > maxAllowed) {
+      throw new Error('O valor informado é maior do que o permitido para a opção selecionada.')
+    }
+
+    let principalIncrement = 0
+    let lateFeeIncrement = 0
+
+    if (paymentType === 'installment') {
+      principalIncrement = paidValue
+    } else if (paymentType === 'interest') {
+      lateFeeIncrement = paidValue
+    } else {
+      principalIncrement = details.principalBalance
+      lateFeeIncrement = Number((paidValue - principalIncrement).toFixed(2))
+    }
+
+    const principalPaid = Number(((installment.principalPaid || 0) + principalIncrement).toFixed(2))
+    const lateFeePaid = Number(((installment.lateFeePaid || 0) + lateFeeIncrement).toFixed(2))
+    const remainingPrincipal = Number(
+      Math.max(0, details.principalBalance - principalIncrement).toFixed(2)
+    )
+    const remainingLateFee = Number(
+      Math.max(0, details.lateFeeBalance - lateFeeIncrement).toFixed(2)
+    )
+
+    return {
+      ...installment,
+      principalPaid,
+      lateFeePaid,
+      paidValue: Number((principalPaid + lateFeePaid).toFixed(2)),
+      paidDate,
+      status: remainingPrincipal <= 0 && remainingLateFee <= 0 ? 'pago' : 'parcial',
     }
   }
 
@@ -165,17 +245,16 @@ const Financial = () => {
 
     try {
       const paidValue = parseFloat(paymentData.paidValue)
-
-      // Atualizar parcela
-      await installmentsService.markAsPaid(
-        user.uid,
-        selectedInstallment.id,
+      const updatedInstallment = applyPaymentToInstallment(
+        selectedInstallment,
         paidValue,
+        paymentData.paymentType,
         paymentData.paidDate
       )
 
-      // Registrar transação
-      const contract = contracts.find((c) => c.id === selectedInstallment.contractId)
+      await installmentsService.update(user.uid, selectedInstallment.id, updatedInstallment)
+
+      const contract = contracts.find((item) => item.id === selectedInstallment.contractId)
       await transactionsService.add(user.uid, {
         type: 'entrada',
         description: `Parcela ${selectedInstallment.number} - ${contract?.clientName || 'Cliente'}`,
@@ -183,21 +262,18 @@ const Financial = () => {
         date: paymentData.paidDate,
         category: 'honorario',
         paymentMethod: paymentData.paymentMethod,
-        contractId: selectedInstallment.contractId,
-        installmentId: selectedInstallment.id,
         createdBy: user.uid,
       })
 
-      // Atualizar valores do contrato
       if (contract) {
-        const newPaid = (contract.paid || 0) + paidValue
-        const remainingInstallments = installments.filter(
-          (installment) =>
-            installment.contractId === selectedInstallment.contractId &&
-            installment.status !== 'pago' &&
-            installment.id !== selectedInstallment.id
+        const updatedInstallments = installments.map((installmentItem) =>
+          installmentItem.id === selectedInstallment.id ? updatedInstallment : installmentItem
         )
-        const newPending = getPendingInstallmentsTotal(remainingInstallments, paymentData.paidDate)
+        const contractInstallments = updatedInstallments.filter(
+          (installmentItem) => installmentItem.contractId === selectedInstallment.contractId
+        )
+        const newPending = getPendingInstallmentsTotal(contractInstallments, paymentData.paidDate)
+        const newPaid = Number(((contract.paid || 0) + paidValue).toFixed(2))
 
         await contractsService.update(user.uid, contract.id, {
           ...contract,
@@ -212,90 +288,40 @@ const Financial = () => {
       loadData()
     } catch (error) {
       console.error('Erro ao registrar pagamento:', error)
-      alert('Erro ao registrar pagamento')
+      alert(error.message || 'Erro ao registrar pagamento')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleDeleteTransaction = async (id) => {
-    if (!window.confirm('Deseja realmente excluir esta transação?')) return
-
-    try {
-      await transactionsService.delete(user.uid, id)
-      alert('Transação excluída com sucesso!')
-      loadData()
-    } catch (error) {
-      console.error('Erro ao excluir transação:', error)
-      alert('Erro ao excluir transação')
-    }
-  }
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value)
-  }
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('pt-BR')
-  }
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pago: 'bg-green-500 text-white',
-      pendente: 'bg-yellow-500 text-white',
-      vencido: 'bg-red-500 text-white0',
-    }
-    return colors[status] || 'bg-surface-medium text-gray-800'
-  }
-
-  const getStatusIcon = (status) => {
-    const icons = {
-      pago: <CheckCircle className="w-4 h-4" />,
-      pendente: <Clock className="w-4 h-4" />,
-      vencido: <AlertCircle className="w-4 h-4" />,
-    }
-    return icons[status] || <Clock className="w-4 h-4" />
-  }
-
-  // Cálculos
   const totalEntradas = transactions
-    .filter((t) => t.type === 'entrada')
-    .reduce((sum, t) => sum + t.value, 0)
+    .filter((transaction) => transaction.type === 'entrada')
+    .reduce((sum, transaction) => sum + transaction.value, 0)
   const totalSaidas = transactions
-    .filter((t) => t.type === 'saida')
-    .reduce((sum, t) => sum + t.value, 0)
+    .filter((transaction) => transaction.type === 'saida')
+    .reduce((sum, transaction) => sum + transaction.value, 0)
   const saldoAtual = totalEntradas - totalSaidas
 
-  // Parcelas pendentes
-  const pendingInstallments = installments
-    .filter((i) => i.status === 'pendente')
-    .map((inst) => {
-      const contract = contracts.find((c) => c.id === inst.contractId)
-      const daysLate = getDaysLate(inst.dueDate)
-      const isOverdue = daysLate > 0
-      const lateFee = getInstallmentLateFee(inst)
-      const currentValue = getInstallmentCurrentValue(inst)
+  const pendingInstallments = useMemo(
+    () =>
+      installments
+        .filter((installment) => installment.status !== 'pago')
+        .map((installment) => getInstallmentDetails(installment))
+        .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)),
+    [installments, contracts]
+  )
 
-      return {
-        ...inst,
-        contract,
-        currentValue,
-        daysLate,
-        isOverdue,
-        lateFee,
-        status: isOverdue ? 'vencido' : 'pendente',
-      }
-    })
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-
-  // Filtrar transações
-  const filteredTransactions = transactions.filter((t) => {
-    if (filterType !== 'all' && t.type !== filterType) return false
+  const filteredTransactions = transactions.filter((transaction) => {
+    if (filterType !== 'all' && transaction.type !== filterType) return false
     return true
   })
+
+  const selectedInstallmentDetails = selectedInstallment
+    ? getInstallmentDetails(selectedInstallment, paymentData.paidDate)
+    : null
+  const selectedPaymentLimit = selectedInstallment
+    ? getPaymentTypeAmount(selectedInstallment, paymentData.paymentType, paymentData.paidDate)
+    : 0
 
   if (loading) {
     return (
@@ -312,129 +338,115 @@ const Financial = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Financeiro</h1>
-        <button
-          onClick={handleOpenTransactionModal}
-          className="bg-dark-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-dark-700 transition"
-        >
-          <Plus className="w-5 h-5" />
-          Nova Transação
-        </button>
       </div>
 
-      {/* Cards de Resumo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* ENTRADAS */}
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-4 sm:p-6 text-white min-w-0">
           <div className="flex items-center gap-3 mb-3 sm:mb-4">
             <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />
             <span className="text-sm font-medium opacity-90">Total de Entradas</span>
           </div>
-
           <p className="text-2xl sm:text-3xl font-bold break-words">
             {formatCurrency(totalEntradas)}
           </p>
-
           <p className="text-xs sm:text-sm opacity-75 mt-2">
-            {transactions.filter((t) => t.type === 'entrada').length} transações
+            {transactions.filter((transaction) => transaction.type === 'entrada').length} transações
           </p>
         </div>
 
-        {/* SAÍDAS */}
         <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow-lg p-4 sm:p-6 text-white min-w-0">
           <div className="flex items-center gap-3 mb-3 sm:mb-4">
             <TrendingDown className="w-6 h-6 sm:w-8 sm:h-8" />
             <span className="text-sm font-medium opacity-90">Total de Saídas</span>
           </div>
-
           <p className="text-2xl sm:text-3xl font-bold break-words">
             {formatCurrency(totalSaidas)}
           </p>
-
           <p className="text-xs sm:text-sm opacity-75 mt-2">
-            {transactions.filter((t) => t.type === 'saida').length} transações
+            {transactions.filter((transaction) => transaction.type === 'saida').length} transações
           </p>
         </div>
 
-        {/* SALDO */}
         <div className="bg-gradient-to-br from-dark-600 to-dark-500 rounded-lg shadow-lg p-4 sm:p-6 text-white min-w-0">
           <div className="flex items-center gap-3 mb-3 sm:mb-4">
             <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />
             <span className="text-sm font-medium opacity-90">Saldo em Caixa</span>
           </div>
-
           <p className="text-2xl sm:text-3xl font-bold break-words">{formatCurrency(saldoAtual)}</p>
-
           <p className="text-xs sm:text-sm opacity-75 mt-2">Atualizado agora</p>
         </div>
       </div>
 
-      {/* Parcelas Pendentes e Histórico */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Parcelas Pendentes */}
         <div className="bg-background-tertiary rounded-lg shadow overflow-hidden">
-          {/* HEADER */}
           <div className="p-4 sm:p-6 border-b">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h2 className="text-base sm:text-lg font-semibold text-white">Parcelas Pendentes</h2>
-
               <span className="self-start sm:self-auto px-3 py-1 bg-orange-100 text-orange-800 text-xs sm:text-sm font-medium rounded-full">
                 {pendingInstallments.length}
               </span>
             </div>
           </div>
 
-          {/* LISTA */}
           <div className="p-4 sm:p-6 max-h-96 overflow-y-auto">
             {pendingInstallments.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Nenhuma parcela pendente</p>
             ) : (
               <div className="space-y-3">
-                {pendingInstallments.map((inst) => (
+                {pendingInstallments.map((installment) => (
                   <div
-                    key={inst.id}
+                    key={installment.id}
                     className={`p-3 sm:p-4 rounded-lg border-l-4 min-w-0 ${
-                      inst.isOverdue
+                      installment.isOverdue
                         ? 'bg-surface-dark border-red-500'
-                        : 'bg-surface-dark border-surface-medium'
+                        : installment.status === 'parcial'
+                          ? 'bg-surface-dark border-blue-500'
+                          : 'bg-surface-dark border-surface-medium'
                     }`}
                   >
-                    {/* TOP */}
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
                       <div className="min-w-0">
                         <p className="font-medium text-white truncate">
-                          {inst.contract?.clientName || 'Cliente'}
+                          {installment.contract?.clientName || 'Cliente'}
                         </p>
-                        <p className="text-sm text-gray-300">Parcela {inst.number}</p>
+                        <p className="text-sm text-gray-300">Parcela {installment.number}</p>
                       </div>
 
                       <span
                         className={`self-start px-2 py-1 text-xs font-medium rounded-full flex items-center gap-1 ${getStatusColor(
-                          inst.status
+                          installment.status
                         )}`}
                       >
-                        {getStatusIcon(inst.status)}
-                        {inst.isOverdue ? 'Vencida' : 'Pendente'}
+                        {getStatusIcon(installment.status)}
+                        {installment.status === 'parcial'
+                          ? 'Parcial'
+                          : installment.isOverdue
+                            ? 'Vencida'
+                            : 'Pendente'}
                       </span>
                     </div>
 
-                    {/* BOTTOM */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-3">
                       <div>
                         <p className="text-lg font-bold text-white break-words">
-                          {formatCurrency(inst.currentValue)}
+                          {formatCurrency(installment.totalBalance)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          Vencimento: {formatDate(inst.dueDate)}
+                          Vencimento: {formatDate(installment.dueDate)}
                         </p>
-                        {inst.lateFee > 0 && (
+                        <p className="text-xs text-gray-500">
+                          Parcela: {formatCurrency(installment.principalBalance)}
+                        </p>
+                        {installment.lateFeeBalance > 0 && (
                           <p className="text-xs text-red-400">
-                            Juros por atraso: {formatCurrency(inst.lateFee)} ({inst.daysLate} dias)
+                            Juros por atraso: {formatCurrency(installment.lateFeeBalance)} (
+                            {installment.daysLate} dias)
                           </p>
                         )}
                       </div>
 
                       <button
-                        onClick={() => handleOpenPaymentModal(inst)}
+                        onClick={() => handleOpenPaymentModal(installment)}
                         className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
                       >
                         Dar Baixa
@@ -447,15 +459,12 @@ const Financial = () => {
           </div>
         </div>
 
-        {/* Histórico de Transações */}
         <div className="bg-background-tertiary rounded-lg shadow overflow-hidden">
-          {/* HEADER */}
           <div className="p-4 sm:p-6 border-b">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h2 className="text-base sm:text-lg font-semibold text-white">
                 Histórico de Transações
               </h2>
-
               <div className="w-full sm:w-auto">
                 <select
                   value={filterType}
@@ -470,51 +479,46 @@ const Financial = () => {
             </div>
           </div>
 
-          {/* LISTA */}
           <div className="p-4 sm:p-6 max-h-96 overflow-y-auto">
             {filteredTransactions.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Nenhuma transação registrada</p>
             ) : (
               <div className="space-y-3">
-                {filteredTransactions.map((trans) => (
+                {filteredTransactions.map((transaction) => (
                   <div
-                    key={trans.id}
+                    key={transaction.id}
                     className="p-3 bg-surface-dark rounded-lg hover:bg-surface-medium transition min-w-0"
                   >
-                    {/* CONTEÚDO */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      {/* ESQUERDA */}
                       <div className="flex items-start gap-3 min-w-0">
                         <div
                           className={`p-2 rounded flex-shrink-0 ${
-                            trans.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'
+                            transaction.type === 'entrada' ? 'bg-green-500' : 'bg-red-500'
                           }`}
                         >
-                          {trans.type === 'entrada' ? (
+                          {transaction.type === 'entrada' ? (
                             <TrendingUp className="w-4 h-4 text-white" />
                           ) : (
                             <TrendingDown className="w-4 h-4 text-white" />
                           )}
                         </div>
-
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-white truncate">
-                            {trans.description}
+                            {transaction.description}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {formatDate(trans.date)} • {trans.category}
+                            {formatDate(transaction.date)} • {transaction.category}
                           </p>
                         </div>
                       </div>
 
-                      {/* VALOR */}
                       <span
                         className={`text-sm sm:text-base font-semibold self-start sm:self-auto ${
-                          trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                          transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {trans.type === 'entrada' ? '+' : '-'}
-                        {formatCurrency(trans.value)}
+                        {transaction.type === 'entrada' ? '+' : '-'}
+                        {formatCurrency(transaction.value)}
                       </span>
                     </div>
                   </div>
@@ -525,135 +529,118 @@ const Financial = () => {
         </div>
       </div>
 
-      {/* Tabela Detalhada */}
       <div className="bg-background-tertiary rounded-lg shadow overflow-hidden">
-        {/* HEADER */}
         <div className="p-4 sm:p-6 border-b">
           <h2 className="text-base sm:text-lg font-semibold text-white">Todas as Transações</h2>
         </div>
-
-        {/* Mobile Cards */}
         <div className="space-y-3 p-4 md:hidden">
           {filteredTransactions.length === 0 ? (
-            <p className="py-8 text-center text-gray-500">Nenhuma transaÃ§Ã£o registrada</p>
+            <p className="py-8 text-center text-gray-500">Nenhuma transação registrada</p>
           ) : (
-            filteredTransactions.map((trans) => (
-              <div key={trans.id} className="space-y-3 rounded-lg bg-surface-dark p-4">
+            filteredTransactions.map((transaction) => (
+              <div key={transaction.id} className="space-y-3 rounded-lg bg-surface-dark p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="break-words text-sm font-medium text-white">
-                      {trans.description}
+                      {transaction.description}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500">{formatDate(trans.date)}</p>
+                    <p className="mt-1 text-xs text-gray-500">{formatDate(transaction.date)}</p>
                   </div>
-
                   <span
                     className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${
-                      trans.type === 'entrada' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                      transaction.type === 'entrada'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-red-500 text-white'
                     }`}
                   >
-                    {trans.type === 'entrada' ? 'Entrada' : 'Saí­da'}
+                    {transaction.type === 'entrada' ? 'Entrada' : 'Saída'}
                   </span>
                 </div>
-
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="min-w-0">
                     <p className="text-xs uppercase text-gray-500">Categoria</p>
-                    <p className="break-words capitalize text-gray-300">{trans.category}</p>
+                    <p className="break-words capitalize text-gray-300">{transaction.category}</p>
                   </div>
-
                   <div className="min-w-0">
-                    <p className="text-xs uppercase text-gray-500">MÃ©todo</p>
-                    <p className="break-words capitalize text-gray-300">{trans.paymentMethod}</p>
+                    <p className="text-xs uppercase text-gray-500">Método</p>
+                    <p className="break-words capitalize text-gray-300">
+                      {transaction.paymentMethod}
+                    </p>
                   </div>
                 </div>
-
                 <div className="border-t border-surface-medium pt-3">
                   <p className="text-xs uppercase text-gray-500">Valor</p>
                   <p
                     className={`text-base font-semibold ${
-                      trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                      transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
                     }`}
                   >
-                    {trans.type === 'entrada' ? '+' : '-'}
-                    {formatCurrency(trans.value)}
+                    {transaction.type === 'entrada' ? '+' : '-'}
+                    {formatCurrency(transaction.value)}
                   </p>
                 </div>
               </div>
             ))
           )}
         </div>
-
-        {/* TABELA */}
         <div className="hidden max-w-full overflow-x-auto md:block">
           <table className="w-full min-w-[700px]">
-            {/* HEAD */}
             <thead className="bg-surface-dark">
               <tr>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Data
                 </th>
-
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Tipo
                 </th>
-
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Descrição
                 </th>
-
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Categoria
                 </th>
-
                 <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Método
                 </th>
-
                 <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                   Valor
                 </th>
               </tr>
             </thead>
-
-            {/* BODY */}
             <tbody className="divide-y divide-surface-dark">
-              {filteredTransactions.map((trans) => (
-                <tr key={trans.id} className="hover:bg-surface-dark">
+              {filteredTransactions.map((transaction) => (
+                <tr key={transaction.id} className="hover:bg-surface-dark">
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-white whitespace-nowrap">
-                    {formatDate(trans.date)}
+                    {formatDate(transaction.date)}
                   </td>
-
                   <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <span
                       className={`px-2 sm:px-3 py-1 text-xs font-medium rounded-full ${
-                        trans.type === 'entrada'
+                        transaction.type === 'entrada'
                           ? 'bg-green-500 text-white'
                           : 'bg-red-500 text-white'
                       }`}
                     >
-                      {trans.type === 'entrada' ? 'Entrada' : 'Saída'}
+                      {transaction.type === 'entrada' ? 'Entrada' : 'Saída'}
                     </span>
                   </td>
-
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-white max-w-[200px] truncate">
-                    {trans.description}
+                    {transaction.description}
                   </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">{trans.category}</td>
-
+                  <td className="px-6 py-4 text-sm text-gray-300 capitalize">
+                    {transaction.category}
+                  </td>
                   <td className="hidden lg:table-cell px-6 py-4 text-sm text-gray-300 capitalize">
-                    {trans.paymentMethod}
+                    {transaction.paymentMethod}
                   </td>
-
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-right whitespace-nowrap">
                     <span
                       className={`font-semibold ${
-                        trans.type === 'entrada' ? 'text-green-600' : 'text-red-600'
+                        transaction.type === 'entrada' ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      {trans.type === 'entrada' ? '+' : '-'}
-                      {formatCurrency(trans.value)}
+                      {transaction.type === 'entrada' ? '+' : '-'}
+                      {formatCurrency(transaction.value)}
                     </span>
                   </td>
                 </tr>
@@ -663,140 +650,7 @@ const Financial = () => {
         </div>
       </div>
 
-      {/* Modal de Transação */}
-      {showModal && modalType === 'transaction' && (
-        <Modal title="Nova Transação" onClose={handleCloseModal}>
-          <form onSubmit={handleSubmitTransaction} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">Tipo *</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, type: 'entrada' })}
-                    className={`px-4 py-3 rounded-lg border-2 transition ${
-                      formData.type === 'entrada'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-surface-medium hover:border-gray-400'
-                    }`}
-                  >
-                    <TrendingUp className="w-5 h-5 mx-auto mb-1" />
-                    <span className="text-sm font-medium">Entrada</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, type: 'saida' })}
-                    className={`px-4 py-3 rounded-lg border-2 transition ${
-                      formData.type === 'saida'
-                        ? 'border-red-500 bg-red-50 text-red-700'
-                        : 'border-surface-medium hover:border-gray-400'
-                    }`}
-                  >
-                    <TrendingDown className="w-5 h-5 mx-auto mb-1" />
-                    <span className="text-sm font-medium">Saída</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-200 mb-2">Descrição *</label>
-                <input
-                  type="text"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleTransactionChange}
-                  placeholder="Ex: Pagamento de honorários, Despesas cartório..."
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">Valor (R$) *</label>
-                <input
-                  type="number"
-                  name="value"
-                  value={formData.value}
-                  onChange={handleTransactionChange}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">Data *</label>
-                <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
-                  onChange={handleTransactionChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">Categoria *</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleTransactionChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
-                  required
-                >
-                  <option value="honorario">Honorário</option>
-                  <option value="despesa">Despesa</option>
-                  <option value="antecipacao">Antecipação</option>
-                  <option value="outros">Outros</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
-                  Método de Pagamento *
-                </label>
-                <select
-                  name="paymentMethod"
-                  value={formData.paymentMethod}
-                  onChange={handleTransactionChange}
-                  className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
-                  required
-                >
-                  <option value="pix">PIX</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="cartao">Cartão</option>
-                  <option value="transferencia">Transferência</option>
-                  <option value="boleto">Boleto</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="flex-1 px-6 py-3 border border-surface-medium text-gray-200 rounded-lg hover:bg-surface-dark transition font-medium"
-                disabled={submitting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-6 py-3 bg-dark-600 text-white rounded-lg hover:bg-dark-700 transition font-medium disabled:opacity-50"
-                disabled={submitting}
-              >
-                {submitting ? 'Salvando...' : 'Registrar'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Modal de Baixa de Pagamento */}
-      {showModal && modalType === 'payment' && selectedInstallment && (
+      {showPaymentModal && selectedInstallment && selectedInstallmentDetails && (
         <Modal title="Registrar Pagamento" onClose={handleCloseModal}>
           <form onSubmit={handleSubmitPayment} className="space-y-4">
             <div className="bg-dark-500/10 border border-blue-200 rounded-lg p-4 mb-4">
@@ -804,29 +658,72 @@ const Financial = () => {
               <div className="space-y-1 text-sm text-dark-200">
                 <p>
                   <span className="font-medium">Cliente:</span>{' '}
-                  {selectedInstallment.contract?.clientName}
+                  {selectedInstallmentDetails.contract?.clientName}
                 </p>
                 <p>
-                  <span className="font-medium">Parcela:</span> {selectedInstallment.number}
+                  <span className="font-medium">Parcela:</span> {selectedInstallmentDetails.number}
                 </p>
                 <p>
-                  <span className="font-medium">Valor:</span>{' '}
-                  {formatCurrency(selectedInstallment.currentValue || selectedInstallment.value)}
+                  <span className="font-medium">Saldo da parcela:</span>{' '}
+                  {formatCurrency(selectedInstallmentDetails.principalBalance)}
                 </p>
-                {(selectedInstallment.lateFee || 0) > 0 && (
-                  <p>
-                    <span className="font-medium">Juros por atraso:</span>{' '}
-                    {formatCurrency(selectedInstallment.lateFee)} ({selectedInstallment.daysLate}{' '}
-                    dias)
-                  </p>
-                )}
+                <p>
+                  <span className="font-medium">Juros diários:</span>{' '}
+                  {formatCurrency(selectedInstallmentDetails.lateFeeBalance)}
+                </p>
+                <p>
+                  <span className="font-medium">Total em aberto:</span>{' '}
+                  {formatCurrency(selectedInstallmentDetails.totalBalance)}
+                </p>
                 <p>
                   <span className="font-medium">Vencimento:</span>{' '}
-                  {formatDate(selectedInstallment.dueDate)}
+                  {formatDate(selectedInstallmentDetails.dueDate)}
                 </p>
               </div>
             </div>
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-200">Tipo de baixa *</label>
+              <div className="grid grid-cols-1 gap-3">
+                {PAYMENT_TYPE_OPTIONS.map((option) => {
+                  const optionAmount = getPaymentTypeAmount(
+                    selectedInstallment,
+                    option.value,
+                    paymentData.paidDate
+                  )
+                  const disabled = optionAmount <= 0
 
+                  return (
+                    <label
+                      key={option.value}
+                      className={`rounded-lg border p-3 transition ${
+                        paymentData.paymentType === option.value
+                          ? 'border-dark-500 bg-dark-500/10'
+                          : 'border-surface-medium bg-background-tertiary'
+                      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        value={option.value}
+                        checked={paymentData.paymentType === option.value}
+                        onChange={handlePaymentChange}
+                        disabled={disabled}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-white">{option.label}</p>
+                          <p className="text-xs text-gray-400">{option.description}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-green-400">
+                          {formatCurrency(optionAmount)}
+                        </span>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-200 mb-2">
@@ -840,11 +737,14 @@ const Financial = () => {
                   placeholder="0.00"
                   step="0.01"
                   min="0"
+                  max={selectedPaymentLimit}
                   className="w-full px-4 py-2 border border-surface-medium rounded-lg focus:ring-2 focus:ring-dark-500 focus:border-transparent bg-background-tertiary"
                   required
                 />
+                <p className="mt-2 text-xs text-gray-500">
+                  Máximo para esta opção: {formatCurrency(selectedPaymentLimit)}
+                </p>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-200 mb-2">
                   Data do Pagamento *
@@ -858,7 +758,6 @@ const Financial = () => {
                   required
                 />
               </div>
-
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-200 mb-2">
                   Método de Pagamento *
@@ -877,7 +776,6 @@ const Financial = () => {
                   <option value="boleto">Boleto</option>
                 </select>
               </div>
-
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-200 mb-2">Observações</label>
                 <textarea
@@ -890,7 +788,6 @@ const Financial = () => {
                 />
               </div>
             </div>
-
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
@@ -903,7 +800,7 @@ const Financial = () => {
               <button
                 type="submit"
                 className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50"
-                disabled={submitting}
+                disabled={submitting || selectedPaymentLimit <= 0}
               >
                 {submitting ? 'Processando...' : 'Confirmar Pagamento'}
               </button>
@@ -914,4 +811,5 @@ const Financial = () => {
     </div>
   )
 }
+
 export default Financial
